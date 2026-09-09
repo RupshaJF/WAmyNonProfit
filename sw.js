@@ -1,5 +1,5 @@
 /* সার্ভিস ওয়ার্কার — অ্যাপ ইনস্টল, অফলাইন সাপোর্ট ও ক্যাশিং হ্যান্ডেল করে */
-const CACHE_VERSION = 'rjf-v38';
+const CACHE_VERSION = 'rjf-v1.03.09';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 

@@ -173,10 +173,14 @@ RJF.renderLoginPage = function () {
 
         /* ─── Brand header ─── */
         '<div class="login-header">' +
-          '<div class="login-logo-ring"><i class="fa-solid fa-shield-halved"></i></div>' +
-          '<h1>রূপসা জনকল্যাণ ফাউন্ডেশন</h1>' +
-          '<p class="login-subtitle">সদস্য পোর্টাল</p>' +
-          '<div class="login-badge"><span class="pulse"></span>সদস্যদের জন্য</div>' +
+          '<div class="login-logo-ring">' +
+            '<img class="login-logo-img" src="' + ((window.RJF && RJF.data && RJF.data.brand && RJF.data.brand.logo) ? RJF.data.brand.logo : '/icons/benar_logo.png') + '" alt="রূপসা জনকল্যাণ ফাউন্ডেশন">' +
+          '</div>' +
+          '<div class="login-header-text" id="lpHeaderText">' +
+            '<h1>রূপসা জনকল্যাণ ফাউন্ডেশন</h1>' +
+            '<p class="login-subtitle">সদস্য পোর্টাল</p>' +
+            '<div class="login-badge"><span class="dot"></span>সদস্যদের জন্য</div>' +
+          '</div>' +
         '</div>' +
 
         /* ─── Login form card ─── */
@@ -531,6 +535,8 @@ RJF._wireLoginPage = function () {
     RJF._lpTeardownDashboard();
     dashboard.classList.remove('visible');
     formCard.style.display = '';
+    var headerTextEl = document.getElementById('lpHeaderText');
+    if (headerTextEl) headerTextEl.classList.remove('visible');
     RJF._lpToast('সফলভাবে লগআউট হয়েছেন।');
   });
 
@@ -692,6 +698,10 @@ RJF._lpShowDashboard = function (data, formCard, dashboard) {
   if (addressEl) addressEl.textContent = data.permanent_address || '—';
 
   dashboard.classList.add('visible');
+
+  /* লগইনের পরে ব্র্যান্ড হেডার (নাম/সাবটাইটেল/ব্যাজ) দেখানো */
+  var headerTextEl = document.getElementById('lpHeaderText');
+  if (headerTextEl) headerTextEl.classList.add('visible');
 
   /* প্রথম ট্যাব (প্রোফাইল) নিশ্চিত করে দেখানো */
   document.querySelectorAll('#lpDashTabs .lp-dash-tab').forEach(function (b) {

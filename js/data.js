@@ -5,7 +5,8 @@ RJF.data = {
   brand: {
     name: "রূপসা জনকল্যাণ ফাউন্ডেশন",
     sub: "RUPSHA JANAKALYAN FOUNDATION",
-    logo: "/icons/benar_logo.png" // ব্যানার লোগো এই নামে/পাথে যোগ করুন
+    logo: "/icons/benar_logo.png", // ব্যানার/নেভবার লোগো এই নামে/পাথে যোগ করুন
+    loginLogo: "/icons/logo.webp" // শুধু লগইন পেজের লোগো — খালি/মুছে দিলে (null বা "") icon-512.png ব্যবহার হবে
   },
 
   nav: [

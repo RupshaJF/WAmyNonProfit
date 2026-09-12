@@ -178,21 +178,21 @@ RJF.renderLoginPage = function () {
           '</div>' +
           '<div class="login-header-text" id="lpHeaderText">' +
             '<h1>রূপসা জনকল্যাণ ফাউন্ডেশন</h1>' +
-            '<p class="login-subtitle">সদস্য সেশন</p>' +
+            '<p class="login-subtitle">সদস্য পোর্টাল</p>' +
             '<div class="login-badge"><span class="dot"></span>সদস্যদের জন্য</div>' +
           '</div>' +
         '</div>' +
 
         /* ─── Login form card ─── */
         '<div class="login-card" id="lpFormCard">' +
-          '<h2 class="login-card-title">RJF Member Login</h2>' +
-          '<p class="login-card-desc">Log in using your member ID and password</p>' +
+          '<h2 class="login-card-title">সদস্য লগইন</h2>' +
+          '<p class="login-card-desc">আপনার সদস্য আইডি ও পাসওয়ার্ড দিয়ে প্রবেশ করুন</p>' +
 
           '<form id="lpForm" novalidate>' +
 
             /* Member ID */
             '<div class="lp-field">' +
-              '<label class="lp-label" for="lpMemberId">Member ID<span class="req">*</span></label>' +
+              '<label class="lp-label" for="lpMemberId">সদস্য আইডি <span class="req">*</span></label>' +
               '<div class="lp-input-wrap">' +
                 '<input class="lp-input" type="text" id="lpMemberId" name="member_id" placeholder="RJF-2025-XXXX" autocomplete="username" spellcheck="false" required>' +
                 '<i class="fa-solid fa-id-card lp-input-icon"></i>' +
@@ -202,11 +202,11 @@ RJF.renderLoginPage = function () {
 
             /* Password */
             '<div class="lp-field">' +
-              '<label class="lp-label" for="lpPassword">Password<span class="req">*</span></label>' +
+              '<label class="lp-label" for="lpPassword">পাসওয়ার্ড <span class="req">*</span></label>' +
               '<div class="lp-input-wrap">' +
                 '<input class="lp-input" type="password" id="lpPassword" name="password" placeholder="••••••••" autocomplete="current-password" required>' +
                 '<i class="fa-solid fa-lock lp-input-icon"></i>' +
-                '<button type="button" class="lp-pw-toggle" id="lpPwToggle" aria-label="Show Password">' +
+                '<button type="button" class="lp-pw-toggle" id="lpPwToggle" aria-label="পাসওয়ার্ড দেখুন">' +
                   '<i class="fa-solid fa-eye" id="lpPwEyeIcon"></i>' +
                 '</button>' +
               '</div>' +
@@ -215,7 +215,7 @@ RJF.renderLoginPage = function () {
 
             /* Submit */
             '<button type="submit" class="lp-submit" id="lpSubmit">' +
-              '<span id="lpSubmitText"><i class="fa-solid fa-right-to-bracket"></i>Login</span>' +
+              '<span id="lpSubmitText"><i class="fa-solid fa-right-to-bracket"></i> লগইন করুন</span>' +
               '<div class="lp-spinner" id="lpSpinner"></div>' +
             '</button>' +
 
@@ -223,15 +223,15 @@ RJF.renderLoginPage = function () {
 
           /* Password request link */
           '<div class="lp-pw-request-wrap">' +
-            '<button type="button" class="lp-pw-request-btn" id="lpPwRequestBtn">Didn't receive the password or forgot it?</button>' +
+            '<button type="button" class="lp-pw-request-btn" id="lpPwRequestBtn">পাসওয়ার্ড পাননি বা ভুলে গেছেন?</button>' +
           '</div>' +
 
           /* New user area */
           '<div class="lp-new-user">' +
-            '<p class="lp-new-user-text">Not a member yet? Become a valued member of our organization and join us in serving the community.</p>' +
+            '<p class="lp-new-user-text">এখনও আমাদের সদস্য হননি?</p>' +
             '<a href="#/apply" class="lp-new-user-btn" id="lpApplyLink">' +
               '<i class="fa-solid fa-user-plus"></i>' +
-              'Apply to Join' +
+              'সদস্য হওয়ার আবেদন করুন' +
             '</a>' +
           '</div>' +
 
@@ -241,8 +241,8 @@ RJF.renderLoginPage = function () {
         '<div class="lp-dashboard" id="lpDashboard">' +
 
           '<div class="lp-dash-header">' +
-            '<button type="button" class="lp-dash-logout" id="lpLogout" title="Logout">' +
-              '<i class="fa-solid fa-right-from-bracket"></i><span class="lp-dash-logout-text">Logout</span>' +
+            '<button type="button" class="lp-dash-logout" id="lpLogout" title="লগআউট">' +
+              '<i class="fa-solid fa-right-from-bracket"></i><span class="lp-dash-logout-text">লগআউট</span>' +
             '</button>' +
             '<div class="lp-dash-top">' +
               '<div class="lp-dash-avatar-wrap">' +

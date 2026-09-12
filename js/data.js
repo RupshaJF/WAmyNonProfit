@@ -17,7 +17,9 @@ RJF.data = {
     { label: "দাতা সদস্যবৃন্দ", href: "#/donors" },
     { label: "গ্যালারি", href: "#/gallery" },
     { label: "দান করুন", href: "#/donate" },
-    { label: "সদস্য আবেদন", href: "#/apply" }
+    { label: "সদস্য আবেদন", href: "#/apply" },
+    /* ↓ নতুন: সদস্য লগইন বাটন */
+    { label: "সদস্য লগইন", href: "#/login" }
   ],
 
   hero: {
@@ -25,7 +27,7 @@ RJF.data = {
     title: "মানুষের পাশে আমরা সব সময়",
     desc: "আমাদের মূল কাজ আমাদের পারিপার্শ্বিক দিকে থাকা সকল বিষয়ের প্রতি নজরদারি করা এবং অসহায়,দরিদ্র এবং বস্তহীন মানুষের পাশে দাঁড়িয়ে সুন্দর সুশৃঙ্খল দেশ গড়ে তোলাই আমাদের লক্ষ্য। ",
 
-    // গ্যালারি স্লাইডার স্লাইডার মেনু ফটো সেকশনে
+    // গ্যালারি স্লাইডার মেনু ফটো সেকশনে
     slides: [
       { src: "/gallery/win-team.webp", alt: "শিক্ষা কার্যক্রম", icon: "book", label: "শিক্ষা কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "/gallery/IMG_20260320_234348.jpg", alt: "ইফতার মাহফিল", icon: "heart", label: "স্বাস্থ্যসেবা কার্যক্রমের ছবি এখানে যোগ করুন" },
@@ -33,15 +35,14 @@ RJF.data = {
       { src: "/gallery/national-anthem-all-team.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "প্রশিক্ষণ কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "/gallery/team-trophy.webp", alt: "ট্রফি উদযাপন", icon: "leaf", label: "বৃক্ষরোপণ কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "/gallery/member/rafiqul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-       { src: "/gallery/member/harrun.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/harrun.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
       { src: "/gallery/member/humayon1.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-       { src: "/gallery/member/kawsar.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-       { src: "/gallery/member/imran_ahmed.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-       { src: "/gallery/member/naim.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-       { src: "/gallery/member/kamrul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-        { src: "/gallery/member/fahim.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/kawsar.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/imran_ahmed.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/naim.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/kamrul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "/gallery/member/fahim.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "Our special members" },
       { src: "/gallery/member/omor.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-
       { src: "/gallery/sumon.webp", alt: "member of foundation", icon: "tool", label: "Our special members" }
     ]
   },
@@ -79,7 +80,6 @@ RJF.data = {
     email: "info.rjfoundation25@gmail.com",
     mapEmbed: "https://www.google.com/maps?q=24.596484,89.76323&output=embed",
     mapLink: "https://maps.google.com/?cid=10520348579752928238"
- 
   },
 
   footer: {
@@ -92,7 +92,8 @@ RJF.data = {
       { label: "সদস্যবৃন্দ", href: "#/member" },
       { label: "দাতা সদস্যবৃন্দ", href: "#/donors" },
       { label: "দান করুন", href: "#/donate" },
-      { label: "সদস্য আবেদন", href: "#/apply" }
+      { label: "সদস্য আবেদন", href: "#/apply" },
+      { label: "সদস্য লগইন", href: "#/login" }
     ],
     legalLinks: [
       { label: "প্রাইভেসি পলিসি", href: "#/privacy" },

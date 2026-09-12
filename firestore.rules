@@ -3,8 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // এখানে আপনার এডমিন ইমেইল বসান — এই ইমেইল দিয়ে লগইন করলেই শুধু এডিট/ডিলিট/অনুমোদন করা যাবে
-    // (admin/js/admin-config.js ফাইলের ADMIN_EMAILS লিস্টের সাথে অবশ্যই মিলিয়ে রাখবেন)
+    // ─────────────────────────────────────────────────────────
+    //  ADMIN CHECK
+    //  এখানে admin ইমেইল বসান — firestore.rules ও
+    //  admin/js/admin-config.js — দুই জায়গায় একই থাকতে হবে
+    // ─────────────────────────────────────────────────────────
     function isAdmin() {
       return request.auth != null &&
         request.auth.token.email in [
@@ -12,36 +15,65 @@ service cloud.firestore {
         ];
     }
 
-    // ---------- সদস্য আবেদন ফরম (registration.js এখানে লেখে, verify.html এখান থেকে পড়ে) ----------
+    // ─────────────────────────────────────────────────────────
+    //  MEMBERS COLLECTION
+    //  - registration.js  → নতুন আবেদন create করে
+    //  - login.js         → member_id দিয়ে read, stored_password update
+    //  - verify.html      → member_id দিয়ে read
+    //  - admin panel      → সব কিছু (read/update/delete)
+    // ─────────────────────────────────────────────────────────
     match /members/{memberId} {
 
-      // যে কেউ verify.html-এ নিজের member_id দিয়ে খুঁজতে পারবে
+      // যে কেউ read করতে পারবে (verify + login উভয়েই দরকার)
       allow read: if true;
 
-      // নতুন আবেদন তৈরির সময় ডাটা ভ্যালিডেশন — প্রয়োজনীয় ফিল্ড থাকতে হবে,
-      // এবং স্ট্যাটাস অবশ্যই 'pending' দিয়ে শুরু হতে হবে (কেউ নিজে থেকে নিজেকে 'approved' বানাতে পারবে না)
-      allow create: if request.resource.data.full_name is string && request.resource.data.full_name.size() > 0 &&
-                      request.resource.data.email is string && request.resource.data.email.size() > 0 &&
-                      request.resource.data.member_id is string && request.resource.data.member_id.size() > 0 &&
-                      request.resource.data.status == 'pending';
+      // নতুন আবেদন — required fields থাকতে হবে, status অবশ্যই 'pending'
+      allow create: if
+        request.resource.data.full_name is string &&
+        request.resource.data.full_name.size() > 0 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() > 0 &&
+        request.resource.data.member_id is string &&
+        request.resource.data.member_id.size() > 0 &&
+        request.resource.data.status == 'pending';
 
-      // এডিট/ডিলিট/অনুমোদন শুধু এডমিন প্যানেল থেকেই করা যাবে
-      allow update, delete: if isAdmin();
+      // UPDATE দুই ধরনের ক্ষেত্রে allowed:
+      //  ① Admin panel — সব ফিল্ড পরিবর্তন করতে পারবে
+      //  ② Login system (unauthenticated) — শুধুমাত্র stored_password
+      //     ফিল্ড আপডেট করতে পারবে (password reset flow)
+      allow update: if isAdmin() ||
+        (
+          // কেউ লগড-ইন না হলেও শুধু stored_password set করতে পারবে
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['stored_password']) &&
+          request.resource.data.stored_password is string &&
+          request.resource.data.stored_password.size() >= 8 &&
+          request.resource.data.stored_password.size() <= 64
+        );
+
+      // delete শুধু admin
+      allow delete: if isAdmin();
     }
 
-    // ---------- কমিটি সদস্য (#/member পেজ) ----------
+    // ─────────────────────────────────────────────────────────
+    //  TEAM MEMBERS (#/member পেজ)
+    // ─────────────────────────────────────────────────────────
     match /team_members/{docId} {
-      allow read: if true;      // সাইটের #/member পেজে সবাই দেখতে পারবে
-      allow write: if isAdmin(); // যোগ/এডিট/ডিলিট শুধু এডমিন
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // ---------- দাতাগণ (#/donors পেজ) ----------
+    // ─────────────────────────────────────────────────────────
+    //  DONORS (#/donors পেজ)
+    // ─────────────────────────────────────────────────────────
     match /donors/{docId} {
-      allow read: if true;      // সাইটের #/donors পেজে সবাই দেখতে পারবে
-      allow write: if isAdmin(); // যোগ/এডিট/ডিলিট শুধু এডমিন
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // অন্য কোনো কালেকশনে কোনো এক্সেস নেই (নিরাপদ ডিফল্ট)
+    // ─────────────────────────────────────────────────────────
+    //  DEFAULT — অন্য সব collection বন্ধ
+    // ─────────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

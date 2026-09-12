@@ -174,7 +174,7 @@ RJF.renderLoginPage = function () {
         /* ─── Brand header ─── */
         '<div class="login-header">' +
           '<div class="login-logo-ring">' +
-            '<img class="login-logo-img" src="' + ((window.RJF && RJF.data && RJF.data.brand && RJF.data.brand.logo) ? RJF.data.brand.logo : '/icons/icon-512.png') + '" alt="রূপসা জনকল্যাণ ফাউন্ডেশন">' +
+            '<img class="login-logo-img" src="' + ((window.RJF && RJF.data && RJF.data.brand && RJF.data.brand.loginLogo) ? RJF.data.brand.loginLogo : '/icons/icon-512.png') + '" alt="রূপসা জনকল্যাণ ফাউন্ডেশন" onerror="this.onerror=null;this.src=\'/icons/icon-512.png\';">' +
           '</div>' +
           '<div class="login-header-text" id="lpHeaderText">' +
             '<h1>রূপসা জনকল্যাণ ফাউন্ডেশন</h1>' +

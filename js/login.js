@@ -18,10 +18,10 @@ RJF.loginConfig = {
     messagingSenderId: "434008909239",
     appId: "1:434008909239:web:a790d1e0603ebfdbd27432"
   },
-  emailjsPublicKey: "YVhcRNK-0_TgFrZCd",
-  emailjsServiceId: "service_jy11eoh",
+  emailjsPublicKey: "dtl9HyOi2wvJEUiRB",
+  emailjsServiceId: "service_272nuuq",
   /* আলাদা template তৈরি করুন EmailJS-এ — variables: {{to_email}}, {{member_id}}, {{password}}, {{to_name}} */
-  emailjsPasswordTemplateId: "template_login_pw",
+  emailjsPasswordTemplateId: "template_hlm44yd",
 
   /* Session storage key */
   sessionKey: "rjf_member_session"

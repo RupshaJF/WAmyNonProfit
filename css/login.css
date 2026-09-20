@@ -1,898 +1,630 @@
 /* ==========================================================================
-   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login Page
-   সাইটের বিদ্যমান design token ও typography-র সাথে সামঞ্জস্যপূর্ণ
+   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login (v2) স্টাইল
+   - পিওর CSS: কোনো লাইব্রেরি নেই, @import নেই (রেন্ডার ব্লক হয় না)
+   - ফ্ল্যাট ও পরিষ্কার: গ্লো/লাইটিং/নিয়ন/ব্লার-হ্যালো/টেক্সট-শ্যাডো একদমই নেই
+     (ফোকাসে স্পষ্ট সলিড আউটলাইন; শ্যাডো শুধু কার্ড/ডায়ালগ উঁচু দেখাতে, অফসেট সহ নিরপেক্ষ রঙে)
+   - সব ক্লাস `.lp` রুটের ভেতরে ও `lp-` প্রিফিক্সে — সাইটের বাকি CSS-এর সাথে সংঘর্ষ নেই
+   - মোবাইল-ফার্স্ট; ≥ 880px-এ স্প্লিট কার্ড, ≥ 900px-এ ড্যাশবোর্ডে সাইডবার
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap');
+.lp {
+  /* ── রঙ (সাইটের ব্র্যান্ড টোকেনের সাথে মিল) ── */
+  --lp-bg: #FBF5E9;
+  --lp-surface: #FFFFFF;
+  --lp-sunken: #F4EEDF;
+  --lp-ink: #1A2420;
+  --lp-ink-2: #46524B;
+  --lp-ink-3: #5E6B64;
+  --lp-line: #E7DFCC;
+  --lp-line-2: #CDC4AE;
+  --lp-line-input: #948F7C; /* ইনপুট/চেকবক্সের সীমানা — সাদা জমিনে ≥ ৩:১ (WCAG 1.4.11) */
+  --lp-brand: #0E3B36;
+  --lp-brand-2: #124A43;
+  --lp-brand-3: #0E6558;
+  --lp-brand-tint: #E8F0ED;
+  --lp-clay: #C1632F;
+  --lp-clay-strong: #A94F1F; /* লেখাসহ ব্যাজের জমিন — সাদা লেখায় ≥ ৪.৫:১ */
+  --lp-gold: #E3A73E;
+  --lp-danger: #B42318;
+  --lp-danger-bg: #FDECEA;
+  --lp-ok: #14603F;
+  --lp-ok-bg: #E5F3EC;
+  --lp-warn: #7A5200;
+  --lp-warn-bg: #FFF3D6;
 
-.login-page {
-  --cream: #FBF5E9;
-  --card: #FFFFFF;
-  --ink: #22302B;
-  --ink-soft: #5B6B62;
-  --teal: #0E5F52;
-  --teal-deep: #0A4A40;
-  --teal-glass: rgba(14, 95, 82, 0.07);
-  --marigold: #E4A335;
-  --marigold-deep: #C7841C;
-  --terracotta: #C1502E;
-  --line: rgba(34, 48, 43, 0.1);
-  --line-focus: rgba(14, 95, 82, 0.45);
-  --danger: #C1502E;
-  --success: #2E7D5F;
+  /* ── আকার ও ছায়া (নিরপেক্ষ, অফসেট-ভিত্তিক) ── */
+  --lp-r-md: 12px;
+  --lp-r-lg: 18px;
+  --lp-shadow: 0 1px 2px rgba(20, 30, 26, .06), 0 14px 30px -18px rgba(20, 30, 26, .28);
 
-  --font-display: 'Fraunces', 'Baloo Da 2', serif;
-  --font-body: 'Hind Siliguri', sans-serif;
-  --radius-lg: 24px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
-  --shadow-card: 0 24px 60px -18px rgba(14, 95, 82, 0.30);
-  --shadow-input: 0 0 0 3px rgba(14, 95, 82, 0.18);
-  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── ফন্ট (index.html-এ আগে থেকেই লোড হয়) ── */
+  --lp-font-body: 'Hind Siliguri', 'Noto Sans Bengali', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --lp-font-head: 'Baloo Da 2', 'Hind Siliguri', 'Noto Sans Bengali', system-ui, sans-serif;
+  --lp-font-num: 'Work Sans', 'Hind Siliguri', system-ui, sans-serif;
 
-  position: relative;
-  min-height: 100vh;
-  padding-top: 120px;
-  padding-bottom: 72px;
-  background: var(--cream);
-  color: var(--ink);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-}
-
-.login-page * { box-sizing: border-box; }
-.login-page h1, .login-page h2, .login-page h3 {
-  font-family: var(--font-display);
-  margin: 0;
-}
-.login-page p { margin: 0; }
-
-/* ── Decorative background orbs — অপসারিত: কোনো লাইটিং/গ্লো ইফেক্ট রাখা হয়নি ── */
-.login-bg-orb {
-  display: none;
-}
-
-/* ── Page wrapper ── */
-.login-wrapper {
-  position: relative;
-  z-index: 1;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* ── Brand header ──
-   নীতি: কোনো গ্লো/লাইটিং ইফেক্ট নেই — শুধু ফ্ল্যাট রঙ, নিখুঁত বর্ডার ও সংযত এলিভেশন শ্যাডো।
-   লোগো-রিং লগইনের আগে-পরে সবসময় দৃশ্যমান; ব্র্যান্ড নাম/সাবটাইটেল/ব্যাজ শুধু লগইনের পরে খোলে। */
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-/* সিল/মেডেলিয়নের ধাঁচে — ভেতরে টেক্সট নয়, প্রকৃত লোগো ছবি */
-.login-logo-ring {
-  width: 88px; height: 88px;
-  border-radius: 50%;
-  background: var(--card);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto;
-  padding: 8px;
-  position: relative;
-  border: 1.5px solid rgba(14, 95, 82, 0.20);
-  box-shadow: 0 8px 22px -10px rgba(14, 59, 54, 0.35);
-}
-/* পাতলা সোনালি সিল-রিং — গ্লো নয়, নিরেট আউটলাইন */
-.login-logo-ring::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  border: 1px solid rgba(199, 132, 28, 0.4);
-}
-.login-logo-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 50%;
-}
-
-/* লগইনের আগে লুকানো, লগইনের পরে স্মুথ রিভিল — display:none-এর বদলে
-   height/opacity ট্রানজিশন দিয়ে যাতে অ্যানিমেশনটা স্মার্ট লাগে */
-.login-header-text {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transform: translateY(-6px);
-  transition:
-    max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.35s ease,
-    transform 0.35s ease,
-    margin-top 0.35s ease;
-}
-.login-header-text.visible {
-  max-height: 160px;
-  opacity: 1;
-  transform: translateY(0);
-  margin-top: 16px;
-}
-
-.login-header h1 {
-  font-size: clamp(1.3rem, 4vw, 1.7rem);
-  color: var(--teal-deep);
-  line-height: 1.3;
-}
-.login-header .login-subtitle {
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-  margin-top: 7px;
-}
-.login-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 14px;
-  padding: 6px 14px;
-  background: rgba(14, 95, 82, 0.08);
-  border: 1px solid rgba(14, 95, 82, 0.14);
-  border-radius: 100px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  color: var(--teal-deep);
-  text-transform: uppercase;
-}
-/* স্থির বিন্দু — কোনো পালস/গ্লো অ্যানিমেশন ছাড়াই */
-.login-badge .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--marigold);
-  flex-shrink: 0;
-}
-
-/* ── Card ── */
-.login-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  padding: 36px 32px 32px;
-  position: relative;
-  overflow: hidden;
-}
-.login-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--teal-deep), var(--teal), var(--marigold));
-}
-
-.login-card-title {
-  font-size: 1.1rem;
-  color: var(--ink);
-  margin-bottom: 6px;
-  text-align: center;
-}
-.login-card-desc {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  text-align: center;
-  margin-bottom: 26px;
-}
-
-/* ── Form fields ── */
-.lp-field {
-  margin-bottom: 18px;
-}
-.lp-label {
-  display: block;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 7px;
-}
-.lp-label .req { color: var(--terracotta); margin-left: 2px; }
-
-.lp-input-wrap {
-  position: relative;
-}
-.lp-input-icon {
-  position: absolute;
-  left: 14px; top: 50%;
-  transform: translateY(-50%);
-  color: var(--ink-soft);
-  font-size: 0.95rem;
-  pointer-events: none;
-  transition: color var(--transition);
-}
-.lp-input {
-  width: 100%;
-  padding: 13px 44px 13px 40px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: var(--ink);
-  background: #fff;
-  outline: none;
-  transition: border-color var(--transition), box-shadow var(--transition);
-}
-.lp-input::placeholder { color: #A8B8B0; }
-.lp-input:focus {
-  border-color: var(--teal);
-  box-shadow: var(--shadow-input);
-}
-.lp-input:focus + .lp-input-icon,
-.lp-input-wrap:focus-within .lp-input-icon {
-  color: var(--teal);
-}
-.lp-input.invalid {
-  border-color: var(--danger);
-  box-shadow: 0 0 0 3px rgba(193,80,46,0.15);
-}
-
-/* Password toggle button */
-.lp-pw-toggle {
-  position: absolute;
-  right: 12px; top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-  padding: 4px;
-  transition: color var(--transition);
-}
-.lp-pw-toggle:hover { color: var(--teal); }
-
-.lp-error-hint {
-  font-size: 0.78rem;
-  color: var(--danger);
-  margin-top: 5px;
-  min-height: 16px;
-}
-
-/* ── Submit button ── */
-.lp-submit {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--teal-deep), var(--teal));
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
+  min-height: 72vh;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: var(--lp-font-body);
   font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 8px;
-  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
-  box-shadow: 0 6px 20px rgba(14,95,82,0.35);
-}
-.lp-submit:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(14,95,82,0.45);
-}
-.lp-submit:active:not(:disabled) { transform: translateY(0); }
-.lp-submit:disabled { opacity: 0.65; cursor: not-allowed; }
-
-/* spinner inside button */
-.lp-spinner {
-  width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: lp-spin 0.7s linear infinite;
-  display: none;
-}
-.lp-spinner.show { display: block; }
-@keyframes lp-spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ── "নতুন সদস্য?" link area ── */
-.lp-new-user {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  text-align: center;
-}
-.lp-new-user-text {
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-  margin-bottom: 10px;
-}
-.lp-new-user-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--teal-glass);
-  border: 1.5px solid rgba(14,95,82,0.22);
-  border-radius: var(--radius-sm);
-  color: var(--teal-deep);
-  font-family: var(--font-body);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background var(--transition), border-color var(--transition), transform var(--transition);
-}
-.lp-new-user-btn:hover {
-  background: rgba(14,95,82,0.12);
-  border-color: var(--teal);
-  transform: translateY(-1px);
-}
-.lp-new-user-btn i { font-size: 0.8rem; }
-
-/* password request link */
-.lp-pw-request-wrap {
-  text-align: center;
-  margin-top: 14px;
-}
-.lp-pw-request-btn {
-  background: none;
-  border: none;
-  color: var(--teal);
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  transition: text-decoration-color var(--transition);
-  padding: 2px 0;
-}
-.lp-pw-request-btn:hover { text-decoration-color: var(--teal); }
-
-/* ── Dashboard (logged-in state) ── */
-.lp-dashboard {
-  display: none;
-}
-.lp-dashboard.visible { display: block; }
-
-.lp-dash-header {
-  background: linear-gradient(135deg, var(--teal-deep), var(--teal));
-  border-radius: var(--radius-lg);
-  padding: 28px 28px 24px;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow-card);
-}
-.lp-dash-header::before {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 160px; height: 160px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-}
-.lp-dash-header::after {
-  content: '';
-  position: absolute;
-  bottom: -30px; left: -30px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(228,163,53,0.12);
-}
-.lp-dash-greeting {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-.lp-dash-name {
-  font-family: var(--font-display);
-  font-size: clamp(1.2rem, 4vw, 1.6rem);
-  font-weight: 600;
-  position: relative;
-  z-index: 1;
-}
-.lp-dash-id {
-  font-size: 0.82rem;
-  opacity: 0.78;
-  margin-top: 6px;
-  font-family: monospace;
-  letter-spacing: 0.05em;
-  position: relative;
-  z-index: 1;
-}
-.lp-dash-logout {
-  position: absolute;
-  top: 16px; right: 16px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 8px;
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  cursor: pointer;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background var(--transition);
-  z-index: 2;
-}
-.lp-dash-logout:hover { background: rgba(255,255,255,0.25); }
-
-/* Dashboard info cards */
-.lp-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.lp-info-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  box-shadow: 0 4px 14px rgba(14,95,82,0.08);
-}
-.lp-info-card-label {
-  font-size: 0.72rem;
-  color: var(--ink-soft);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
-}
-.lp-info-card-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-.lp-info-card-value.status-active {
-  color: var(--success);
-}
-.lp-info-card-value.status-pending {
-  color: var(--marigold-deep);
-}
-
-.lp-info-full {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(14,95,82,0.08);
-}
-.lp-info-full .lp-info-card-label { margin-bottom: 5px; }
-.lp-info-full .lp-info-card-value { font-size: 0.92rem; font-weight: 500; }
-
-/* ── Dashboard header — avatar + name + badges (নতুন লেআউট) ── */
-.lp-dash-top {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: relative;
-  z-index: 1;
-  padding-right: 96px;
-}
-.lp-dash-avatar-wrap {
-  flex-shrink: 0;
-  width: 62px; height: 62px;
-  border-radius: 50%;
-  padding: 3px;
-  background: rgba(255,255,255,0.25);
-}
-.lp-dash-avatar {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  background: #fff;
-  border: 2px solid rgba(255,255,255,0.8);
-}
-.lp-dash-top-text { min-width: 0; }
-.lp-dash-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
-  position: relative;
-  z-index: 1;
-}
-.lp-dash-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.16);
-  border: 1px solid rgba(255,255,255,0.22);
-  color: #fff;
-  font-size: 0.76rem;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 99px;
-}
-.lp-dash-badge.status-active { background: rgba(46,125,95,0.35); border-color: rgba(46,125,95,0.5); }
-.lp-dash-badge.status-pending { background: rgba(228,163,53,0.3); border-color: rgba(228,163,53,0.45); }
-.lp-dash-badge.status-blocked { background: rgba(193,80,46,0.35); border-color: rgba(193,80,46,0.5); }
-
-.lp-dash-logout-text { display: inline; }
-
-/* ── Dashboard tabs ── */
-.lp-dash-tabs {
-  display: flex;
-  gap: 6px;
-  background: var(--teal-glass);
-  border-radius: var(--radius-md);
-  padding: 5px;
-  margin-bottom: 16px;
-}
-.lp-dash-tab {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 8px;
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.lp-dash-tab.active {
-  background: var(--card);
-  color: var(--teal-deep);
-  box-shadow: 0 4px 12px rgba(14,95,82,0.15);
-}
-.lp-tab-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--terracotta);
-  position: relative;
-  top: -8px;
-  margin-left: -3px;
-}
-
-/* ── Dashboard panels ── */
-.lp-dash-panel { display: none; }
-.lp-dash-panel.visible { display: block; animation: lpPanelFade 0.25s ease; }
-@keyframes lpPanelFade {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.lp-blood { color: var(--terracotta); font-weight: 700; }
-
-/* ── QR ভেরিফাই বাটন (প্রোফাইল ট্যাবের নিচে) ── */
-.lp-qr-open-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: linear-gradient(135deg, var(--teal-glass), rgba(228,163,53,0.08));
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  cursor: pointer;
-  text-align: right;
-  transition: transform var(--transition), box-shadow var(--transition);
-  font-family: var(--font-body);
-}
-.lp-qr-open-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14,95,82,0.12); }
-.lp-qr-open-icon {
-  flex-shrink: 0;
-  width: 44px; height: 44px;
-  border-radius: 12px;
-  background: var(--teal-deep);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-}
-.lp-qr-open-text {
-  flex: 1;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.lp-qr-open-text strong { font-size: 0.9rem; color: var(--ink); }
-.lp-qr-open-text small { font-size: 0.76rem; color: var(--ink-soft); }
-.lp-qr-open-btn > i:last-child { color: var(--ink-soft); }
-
-/* ── নোটিশ ও ইভেন্ট তালিকা ── */
-.lp-list-wrap { display: flex; flex-direction: column; gap: 12px; }
-.lp-list-empty {
-  text-align: center;
-  padding: 40px 16px;
-  color: var(--ink-soft);
-  font-size: 0.86rem;
-  background: var(--card);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-md);
-}
-.lp-list-empty i { font-size: 1.4rem; margin-bottom: 8px; display: inline-block; opacity: 0.6; }
-
-.lp-notice-item {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
-  box-shadow: 0 4px 14px rgba(14,95,82,0.06);
-}
-.lp-notice-item.pinned {
-  border-color: rgba(228,163,53,0.4);
-  background: linear-gradient(180deg, rgba(228,163,53,0.06), var(--card) 40%);
-}
-.lp-notice-pin {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--marigold-deep);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
-}
-.lp-notice-title { font-weight: 700; font-size: 0.95rem; color: var(--ink); margin-bottom: 6px; }
-.lp-notice-body { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.6; margin-bottom: 10px; white-space: pre-line; }
-.lp-notice-date { font-size: 0.74rem; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; opacity: 0.85; }
-
-.lp-event-item {
-  display: flex;
-  gap: 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  box-shadow: 0 4px 14px rgba(14,95,82,0.06);
-}
-.lp-event-date-badge {
-  flex-shrink: 0;
-  width: 56px; height: 56px;
-  border-radius: var(--radius-sm);
-  background: var(--teal-deep);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.15;
-}
-.lp-event-day { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
-.lp-event-month { font-size: 0.66rem; text-transform: uppercase; opacity: 0.85; }
-.lp-event-body { flex: 1; min-width: 0; }
-.lp-event-title { font-weight: 700; font-size: 0.92rem; color: var(--ink); margin-bottom: 5px; }
-.lp-event-meta { font-size: 0.78rem; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-.lp-event-desc { font-size: 0.82rem; color: var(--ink-soft); margin-top: 6px; line-height: 1.55; }
-
-/* ── QR ভেরিফাই মডাল ── */
-.lp-qr-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 25, 22, 0.55);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--transition), visibility var(--transition);
-}
-.lp-qr-modal-overlay.open { opacity: 1; visibility: visible; }
-.lp-qr-modal {
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 32px 26px 26px;
-  max-width: 340px;
-  width: 100%;
-  text-align: center;
-  position: relative;
-  box-shadow: var(--shadow-card);
-  transform: translateY(12px);
-  transition: transform var(--transition);
-}
-.lp-qr-modal-overlay.open .lp-qr-modal { transform: translateY(0); }
-.lp-qr-modal-photo-wrap {
-  width: 72px; height: 72px;
-  margin: 0 auto 12px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid var(--teal-glass);
-}
-.lp-qr-modal-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
-.lp-qr-modal h3 { font-size: 1.05rem; color: var(--ink); margin-bottom: 2px; }
-.lp-qr-modal-id { font-size: 0.8rem; color: var(--ink-soft); font-family: monospace; margin-bottom: 18px; }
-.lp-qr-code-box {
-  width: 176px; height: 176px;
-  margin: 0 auto 16px;
-  display: flex; align-items: center; justify-content: center;
-  background: #fff;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  padding: 8px;
-}
-.lp-qr-code-box img, .lp-qr-code-box canvas { display: block; }
-.lp-qr-modal-hint { font-size: 0.76rem; color: var(--ink-soft); line-height: 1.5; margin-bottom: 18px; }
-.lp-qr-modal-actions { display: flex; gap: 10px; }
-.lp-qr-action-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  background: var(--teal);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 11px 10px;
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background var(--transition);
-}
-.lp-qr-action-btn:hover { background: var(--teal-deep); }
-#lpQrOpenLink { background: var(--marigold); color: var(--ink); }
-#lpQrOpenLink:hover { background: var(--marigold-deep); color: #fff; }
-
-/* ── Toast ── */
-.lp-toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--teal-deep);
-  color: #fff;
-  padding: 12px 22px;
-  border-radius: 100px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  box-shadow: 0 10px 28px rgba(14,59,54,0.3);
-  opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  z-index: 999;
-  max-width: 90vw;
-  text-align: center;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.lp-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-.lp-toast.error { background: var(--danger); }
-.lp-toast.success { background: var(--success); }
-
-/* ── Password Request modal ── */
-.lp-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(14,59,54,0.55);
-  backdrop-filter: blur(4px);
-  z-index: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-  padding: 20px;
-}
-.lp-modal-overlay.open {
-  opacity: 1;
-  pointer-events: all;
-}
-.lp-modal {
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 32px 80px rgba(14,59,54,0.4);
-  padding: 32px 28px 28px;
-  width: 100%;
-  max-width: 420px;
-  transform: scale(0.94) translateY(16px);
-  transition: transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1);
-  position: relative;
-  overflow: hidden;
-}
-.lp-modal-overlay.open .lp-modal {
-  transform: scale(1) translateY(0);
-}
-.lp-modal::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--marigold-deep), var(--marigold));
-}
-.lp-modal-icon {
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--marigold-deep), var(--marigold));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem;
-  color: #fff;
-  margin: 0 auto 18px;
-  box-shadow: 0 8px 20px rgba(228,163,53,0.35);
-}
-.lp-modal h3 {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  text-align: center;
-  color: var(--ink);
-  margin-bottom: 8px;
-}
-.lp-modal-desc {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  text-align: center;
-  margin-bottom: 22px;
   line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
-.lp-modal-close {
-  position: absolute;
-  top: 14px; right: 14px;
-  background: var(--teal-glass);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  color: var(--ink-soft);
-  cursor: pointer;
-  padding: 6px 10px;
-  font-size: 0.8rem;
-  transition: background var(--transition), color var(--transition);
+
+.lp,
+.lp *,
+.lp *::before,
+.lp *::after { box-sizing: border-box; }
+
+.lp [hidden] { display: none !important; }
+
+/* রিসেট — :where() দিয়ে স্পেসিফিসিটি শূন্য, তাই নিচের কম্পোনেন্ট ক্লাসগুলো সবসময় জেতে */
+:where(.lp) :where(h1, h2, h3, p, dl, dd, ul) { margin: 0; padding: 0; }
+:where(.lp) :where(ul) { list-style: none; }
+:where(.lp) :where(button) { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+:where(.lp) :where(a) { color: inherit; text-decoration: none; }
+:where(.lp) :where(img) { display: block; max-width: 100%; }
+
+.lp-shell { width: min(100% - 32px, 960px); margin-inline: auto; }
+/* লগইন ভিউতে হিরো ও কার্ড একই প্রস্থে — বাঁ প্রান্ত মিলে থাকে */
+.lp[data-view="auth"] .lp-shell { width: min(100% - 32px, 480px); }
+
+.lp-sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.lp-modal-close:hover {
-  background: rgba(14,95,82,0.12);
-  color: var(--teal-deep);
+
+.lp-icon { width: 1.25em; height: 1.25em; flex: none; }
+
+/* ফোকাস: স্পষ্ট সলিড রিং (গ্লো নয়) */
+.lp a:focus-visible,
+.lp button:focus-visible,
+.lp input:focus-visible,
+.lp [tabindex]:focus-visible {
+  outline: 2px solid var(--lp-brand-3);
+  outline-offset: 2px;
 }
-.lp-modal-send {
-  width: 100%;
-  padding: 13px;
-  background: linear-gradient(135deg, var(--marigold-deep), var(--marigold));
+.lp-idcard :focus-visible { outline-color: #fff; }
+/* কীবোর্ড/ট্যাব ফোকাসে ফিক্সড নেভবারের নিচে ঢাকা পড়ে না */
+.lp :is(input, button, a, [tabindex]) { scroll-margin-top: 104px; scroll-margin-bottom: 28px; }
+.lp [tabindex="-1"]:focus { outline: none; }
+
+/* ══════════ হিরো ══════════ */
+.lp-hero {
+  position: relative;
+  padding: 96px 0 88px;
   color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
+  background-color: var(--lp-brand);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='48' viewBox='0 0 160 48'%3E%3Cpath d='M0 16q20-12 40 0t40 0 40 0 40 0M0 36q20-12 40 0t40 0 40 0 40 0' fill='none' stroke='%23ffffff' stroke-opacity='.06' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+.lp-hero.is-compact { padding: 92px 0 84px; }
+
+.lp-hero__inner { display: flex; align-items: center; gap: 16px; }
+
+.lp-mark {
+  width: 64px; height: 64px; flex: none;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--lp-gold);
+  display: grid; place-items: center;
+  overflow: hidden;
+  color: var(--lp-brand);
+  font: 700 1.6rem var(--lp-font-head);
+}
+.lp-mark img { width: 100%; height: 100%; object-fit: cover; }
+.lp-hero.is-compact .lp-mark { width: 48px; height: 48px; }
+
+.lp-hero__title {
+  font: 700 clamp(1.3rem, 1rem + 1.7vw, 2rem) / 1.25 var(--lp-font-head);
+  color: #fff;
+}
+.lp-hero__sub { color: var(--lp-gold); font-weight: 500; margin-top: 2px; }
+
+.lp-hero__edge {
+  position: absolute; left: 0; bottom: -1px;
+  width: 100%; height: 30px; display: block;
+  fill: var(--lp-bg);
+}
+
+.lp-main { position: relative; z-index: 1; margin-top: -58px; padding-bottom: 56px; }
+
+.lp-back { text-align: center; margin-top: 20px; }
+.lp-back a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 10px;
+  color: var(--lp-ink-2); font-weight: 500;
+}
+
+/* হিরোর লগআউট (শুধু ড্যাশবোর্ডে) */
+.lp-hero__logout {
+  flex: none; margin-inline-start: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 14px;
+  color: #fff; font-weight: 600;
+  border: 1.5px solid rgba(255, 255, 255, .45); border-radius: var(--lp-r-md);
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.lp-hero__logout .lp-icon { width: 20px; height: 20px; }
+.lp-hero__logout:focus-visible { outline-color: #fff; }
+
+/* ══════════ লগইন কার্ড ══════════ */
+.lp-auth {
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-r-lg);
+  box-shadow: var(--lp-shadow);
+  overflow: hidden;
+}
+.lp-aside { display: none; }
+.lp-auth__main { padding: 28px 22px 24px; }
+
+.lp-auth__title { font: 700 1.6rem / 1.25 var(--lp-font-head); color: var(--lp-brand); }
+.lp-auth__lead { color: var(--lp-ink-2); margin-top: 4px; }
+
+.lp-field { margin-top: 18px; }
+.lp-label { display: block; margin-bottom: 8px; font-weight: 600; font-size: .95rem; color: var(--lp-ink); }
+.lp-label-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin-bottom: 8px; }
+.lp-label-row .lp-label { margin: 0; }
+
+.lp-link {
+  padding: 4px 0;
+  color: var(--lp-brand-3); font-weight: 600; font-size: .9rem;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+.lp-control { position: relative; display: flex; align-items: center; }
+.lp-control__icon {
+  position: absolute; inset-inline-start: 14px;
+  display: grid; place-items: center;
+  color: var(--lp-ink-3); pointer-events: none;
+}
+.lp-control__icon .lp-icon { width: 20px; height: 20px; }
+
+.lp-input {
+  width: 100%; height: 52px;
+  padding: 0 14px 0 44px;
+  font: 500 1rem var(--lp-font-body);
+  color: var(--lp-ink);
+  background: #fff;
+  border: 1.5px solid var(--lp-line-input);
+  border-radius: var(--lp-r-md);
+  transition: border-color .15s ease, background-color .15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.lp-input::placeholder { color: #69756E; }
+.lp-input:focus { border-color: var(--lp-brand-3); }
+.lp-input--has-btn { padding-inline-end: 52px; }
+.lp-input:-webkit-autofill,
+.lp-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--lp-ink);
+  -webkit-box-shadow: 0 0 0 1000px #fff inset; /* শুধু ব্রাউজারের অটোফিল রঙ ঢাকতে — কোনো ব্লার/গ্লো নয় */
+  transition: background-color 9999s ease-out 0s;
+}
+.lp-control.is-invalid .lp-input { border-color: var(--lp-danger); background: #FFF8F7; }
+
+.lp-control__btn {
+  position: absolute; inset-inline-end: 6px;
+  width: 40px; height: 40px; border-radius: 10px;
+  display: grid; place-items: center;
+  color: var(--lp-ink-2);
+}
+.lp-control__btn .lp-icon { width: 20px; height: 20px; }
+
+.lp-hint { margin-top: 6px; font-size: .86rem; color: var(--lp-ink-3); }
+.lp-hint:empty { display: none; }
+.lp-hint--warn { display: flex; align-items: center; gap: 6px; color: var(--lp-warn); font-weight: 500; }
+.lp-hint--warn .lp-icon { width: 16px; height: 16px; }
+.lp-error { margin-top: 6px; font-size: .9rem; font-weight: 500; color: var(--lp-danger); }
+
+/* চেকবক্স */
+.lp-check { position: relative; display: flex; align-items: flex-start; gap: 12px; margin-top: 18px; cursor: pointer; }
+.lp-check input { position: absolute; inset-inline-start: 0; top: 2px; width: 22px; height: 22px; margin: 0; opacity: 0; cursor: pointer; }
+.lp-check__box {
+  flex: none; width: 22px; height: 22px; margin-top: 2px;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--lp-line-input); border-radius: 6px;
+  background: #fff; color: #fff;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.lp-check__box .lp-icon { width: 14px; height: 14px; stroke-width: 3; opacity: 0; }
+.lp-check input:checked + .lp-check__box { background: var(--lp-brand); border-color: var(--lp-brand); }
+.lp-check input:checked + .lp-check__box .lp-icon { opacity: 1; }
+.lp-check input:focus-visible + .lp-check__box { outline: 2px solid var(--lp-brand-3); outline-offset: 2px; }
+.lp-check__text strong { display: block; font-weight: 600; font-size: .95rem; }
+.lp-check__text small { display: block; margin-top: 1px; font-size: .85rem; line-height: 1.45; color: var(--lp-ink-3); }
+
+.lp-auth form .lp-btn { margin-top: 22px; }
+
+.lp-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 26px 0 16px; color: var(--lp-ink-3); font-size: .9rem;
+}
+.lp-divider::before, .lp-divider::after { content: ''; flex: 1; height: 1px; background: var(--lp-line); }
+
+/* ══════════ বাটন ══════════ */
+.lp-btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 20px;
+  font: 600 1rem var(--lp-font-body);
+  border: 1.5px solid transparent; border-radius: var(--lp-r-md);
+  transition: background-color .15s ease, border-color .15s ease, transform .08s ease;
+}
+.lp-btn:active { transform: scale(.985); }
+.lp-btn:disabled { cursor: not-allowed; opacity: .6; }
+.lp-btn .lp-icon { width: 20px; height: 20px; }
+.lp-btn__label { display: inline-flex; align-items: center; gap: 8px; }
+
+.lp-btn--primary { background: var(--lp-brand); color: #fff; }
+.lp-btn--ghost { background: #fff; color: var(--lp-brand); border-color: var(--lp-line-2); }
+.lp-btn--block { display: flex; width: 100%; }
+.lp-btn--lg { min-height: 54px; font-size: 1.05rem; }
+.lp-btn--sm { min-height: 38px; padding: 0 14px; font-size: .9rem; border-radius: 10px; }
+.lp-btn--sm .lp-icon { width: 18px; height: 18px; }
+
+/* লোডিং স্পিনার — ঘুরন্ত রিং (আলোর ঝলক নয়) */
+.lp-spin {
+  display: none; width: 18px; height: 18px; flex: none;
+  border: 2.5px solid currentColor; border-left-color: transparent; border-radius: 50%;
+  animation: lp-rot .7s linear infinite;
+}
+.lp-btn.is-busy .lp-spin { display: block; }
+@keyframes lp-rot { to { transform: rotate(360deg); } }
+
+.lp-iconbtn {
+  flex: none; width: 40px; height: 40px; border-radius: 10px;
+  display: inline-grid; place-items: center;
+  color: var(--lp-ink-2);
+}
+.lp-iconbtn .lp-icon { width: 20px; height: 20px; }
+.lp-iconbtn--on-dark { color: #fff; }
+
+/* ══════════ অ্যালার্ট / ব্যানার ══════════ */
+.lp-alert,
+.lp-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-top: 16px; padding: 12px 14px;
+  border: 1px solid var(--lp-line); border-radius: var(--lp-r-md);
+  font-size: .95rem;
+}
+.lp-alert .lp-icon,
+.lp-banner .lp-icon { width: 20px; height: 20px; margin-top: 2px; }
+.lp-alert__title { font-weight: 700; }
+.lp-alert__detail { margin-top: 2px; }
+.lp-alert--error { background: var(--lp-danger-bg); border-color: #F1C5BE; color: #7A1D14; }
+.lp-alert--warn, .lp-banner--warn { background: var(--lp-warn-bg); border-color: #EBD59B; color: #5C3D00; }
+.lp-alert--info { background: var(--lp-brand-tint); border-color: #C4DAD4; color: #0B3A33; }
+.lp-banner { margin-top: 0; margin-bottom: 12px; align-items: center; }
+.lp-banner .lp-icon { margin-top: 0; }
+.lp-auth__main .lp-banner { margin-top: 16px; margin-bottom: 0; }
+
+/* ইনপুট ঝাঁকুনি (ভুল পাসওয়ার্ড) */
+.is-nudge { animation: lp-nudge .28s ease-in-out; }
+@keyframes lp-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* ══════════ টোস্ট ══════════ */
+.lp-toasts {
+  position: fixed; z-index: 2000;
+  left: 0; right: 0; bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 0 16px; pointer-events: none;
+}
+.lp-toast {
+  pointer-events: auto;
+  display: flex; align-items: center; gap: 10px;
+  width: fit-content; min-width: min(320px, 100%); max-width: 460px;
+  padding: 10px 8px 10px 14px;
+  background: var(--lp-ink); color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px -10px rgba(0, 0, 0, .45);
+  animation: lp-toast-in .2s ease-out;
+}
+.lp-toast--success { background: var(--lp-ok); }
+.lp-toast--error { background: #8F2A1F; }
+.lp-toast__icon { width: 20px; height: 20px; }
+.lp-toast__msg { flex: 1; font-weight: 500; overflow-wrap: anywhere; }
+.lp-toast__x { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #fff; opacity: .9; }
+.lp-toast__x .lp-icon { width: 18px; height: 18px; }
+.lp-toast.is-leaving { opacity: 0; transform: translateY(6px); transition: opacity .18s ease, transform .18s ease; }
+@keyframes lp-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ══════════ ডায়ালগ ══════════ */
+.lp-dialog {
+  margin: auto; /* সাইটের গ্লোবাল `* { margin: 0 }` UA-র margin:auto মুছে দেয় — তাই স্পষ্ট করে দেওয়া */
+  width: min(460px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  padding: 22px;
+  border: 0; border-radius: 20px;
+  background: #fff; color: var(--lp-ink);
+  box-shadow: 0 26px 50px -22px rgba(0, 0, 0, .55);
+  overflow: auto;
+}
+.lp-dialog:not([open]) { display: none; }
+.lp-dialog::backdrop { background: rgba(12, 28, 25, .6); }
+.lp-dialog--sm { width: min(400px, calc(100vw - 24px)); }
+
+.lp-dialog__head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.lp-dialog__icon {
+  flex: none; width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: var(--lp-brand-tint); color: var(--lp-brand);
+}
+.lp-dialog__icon--warn { background: var(--lp-warn-bg); color: var(--lp-warn); }
+.lp-dialog__title { flex: 1; font: 700 1.2rem / 1.3 var(--lp-font-head); }
+.lp-dialog__desc { color: var(--lp-ink-2); font-size: .95rem; }
+.lp-dialog__desc--center { text-align: center; margin-top: 12px; }
+.lp-dialog__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.lp-dialog__actions .lp-btn { flex: 1 1 140px; }
+.lp-dialog .lp-field { margin-top: 16px; }
+.lp-dialog .lp-btn--block { margin-top: 16px; }
+
+.lp-done { text-align: center; padding: 6px 0 2px; }
+.lp-done__icon {
+  display: inline-grid; place-items: center;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--lp-ok-bg); color: var(--lp-ok);
+}
+.lp-done__icon .lp-icon { width: 28px; height: 28px; stroke-width: 2.4; }
+.lp-done.is-failed .lp-done__icon { background: var(--lp-warn-bg); color: var(--lp-warn); }
+.lp-done__title { margin-top: 12px; font: 700 1.25rem var(--lp-font-head); }
+.lp-done__msg { margin-top: 6px; color: var(--lp-ink-2); overflow-wrap: anywhere; }
+
+.lp-qrbox {
+  width: min(260px, 100%); margin: 6px auto 0; padding: 10px;
+  background: #fff; border: 1px solid var(--lp-line); border-radius: 16px;
+}
+.lp-qrbox svg { display: block; width: 100%; height: auto; }
+.lp-qrname { margin-top: 14px; text-align: center; font: 700 1.15rem var(--lp-font-head); overflow-wrap: anywhere; }
+.lp-qrid { text-align: center; font: 600 1rem var(--lp-font-num); letter-spacing: .04em; color: var(--lp-brand); }
+.lp-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.lp-actions-grid .lp-btn { padding: 0 12px; }
+.lp-actions-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* ══════════ চিপ ══════════ */
+.lp-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--lp-sunken); color: var(--lp-ink-2);
+  font-size: .8rem; font-weight: 600; line-height: 1.5;
+}
+.lp-chip .lp-icon { width: 14px; height: 14px; }
+.lp-chip--ok { background: var(--lp-ok-bg); color: var(--lp-ok); }
+.lp-chip--wait { background: var(--lp-warn-bg); color: var(--lp-warn); }
+.lp-chip--bad { background: var(--lp-danger-bg); color: var(--lp-danger); }
+.lp-chip--pin { background: var(--lp-warn-bg); color: var(--lp-warn); }
+.lp-chip--new { background: var(--lp-clay-strong); color: #fff; }
+
+/* ══════════ ড্যাশবোর্ড ══════════ */
+.lp-dash { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+.lp-idcard {
+  position: relative; overflow: hidden;
+  padding: 24px 20px 18px;
+  border-radius: var(--lp-r-lg);
+  color: #fff;
+  background-color: var(--lp-brand);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='48' viewBox='0 0 160 48'%3E%3Cpath d='M0 16q20-12 40 0t40 0 40 0 40 0M0 36q20-12 40 0t40 0 40 0 40 0' fill='none' stroke='%23ffffff' stroke-opacity='.05' stroke-width='1.5'/%3E%3C/svg%3E");
+  box-shadow: var(--lp-shadow);
+}
+.lp-idcard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--lp-gold); }
+
+.lp-idcard__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lp-idcard__label { display: inline-flex; align-items: center; gap: 8px; font: 600 .98rem var(--lp-font-head); color: var(--lp-gold); }
+.lp-idcard__label .lp-icon { width: 20px; height: 20px; }
+
+.lp-idcard__person { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
+.lp-avatar {
+  width: 76px; height: 76px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  border-radius: 16px; border: 2px solid #fff; background: #fff;
+}
+.lp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.lp-avatar__ini { font: 700 1.9rem var(--lp-font-head); color: var(--lp-brand); }
+.lp-idcard__who { min-width: 0; }
+.lp-idcard__name { font: 700 1.35rem / 1.3 var(--lp-font-head); color: #fff; overflow-wrap: anywhere; }
+.lp-idcard__type { margin-top: 2px; color: var(--lp-gold); font-weight: 500; }
+
+.lp-idcard__id {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 18px; padding: 6px 6px 6px 14px;
+  border-radius: 12px; background: rgba(255, 255, 255, .09);
+}
+.lp-idcard__idtext { font: 600 1.15rem var(--lp-font-num); letter-spacing: .04em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.lp-idcard__qr {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; margin-top: 14px; padding: 12px;
+  border-radius: 14px; background: #fff;
+  color: var(--lp-ink-2); text-align: start;
+}
+.lp-idcard__qrsvg { display: block; flex: none; width: 92px; }
+.lp-idcard__qrsvg svg { display: block; width: 100%; height: auto; }
+.lp-idcard__qrcap { font-size: .84rem; line-height: 1.5; }
+
+/* ট্যাব — উপরে ট্যাব বার, নিচে প্যানেল (একটাই কার্ডের মতো) */
+.lp-tabs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
-  box-shadow: 0 6px 18px rgba(228,163,53,0.35);
+  background: #fff;
+  border: 1px solid var(--lp-line); border-bottom: 0;
+  border-radius: var(--lp-r-lg) var(--lp-r-lg) 0 0;
+  overflow-x: auto; scrollbar-width: none;
 }
-.lp-modal-send:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(228,163,53,0.45);
+.lp-tabs::-webkit-scrollbar { display: none; }
+.lp-tab {
+  flex: 1 0 auto; min-height: 56px; padding: 0 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--lp-ink-2); font-weight: 600;
+  border-bottom: 3px solid var(--lp-line);
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
 }
-.lp-modal-send:disabled { opacity: 0.6; cursor: not-allowed; }
+.lp-tab .lp-icon { width: 20px; height: 20px; }
+.lp-tab[aria-selected="true"] { color: var(--lp-brand); border-bottom-color: var(--lp-brand); }
+.lp-tabs .lp-tab:focus-visible { outline-offset: -4px; }
 
-/* ── Responsive ── */
-@media (max-width: 520px) {
-  .login-page { padding-top: 100px; }
-  .login-card { padding: 26px 18px 24px; }
-  .lp-info-grid { grid-template-columns: 1fr; }
-  .lp-modal { padding: 28px 18px 24px; }
+.lp-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lp-clay); }
+.lp-count {
+  min-width: 22px; height: 22px; padding: 0 6px;
+  display: inline-grid; place-items: center;
+  border-radius: 999px; background: var(--lp-brand-tint); color: var(--lp-brand);
+  font: 600 .8rem var(--lp-font-head);
+}
 
-  /* ছোট স্ক্রিনে লগআউট বাটনে শুধু আইকন, টেক্সট লুকানো */
-  .lp-dash-logout-text { display: none; }
-  .lp-dash-logout { padding: 8px 10px; }
-  .lp-dash-top { padding-right: 52px; }
-  .lp-dash-avatar-wrap { width: 52px; height: 52px; }
-  .lp-dash-tab { font-size: 0.74rem; padding: 9px 4px; gap: 4px; }
-  .lp-qr-open-btn { flex-wrap: wrap; }
+.lp-panel {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--lp-line); border-top: 0;
+  border-radius: 0 0 var(--lp-r-lg) var(--lp-r-lg);
+  min-height: 220px;
+}
+.lp-panel:focus-visible { outline-offset: -3px; }
+
+/* প্রোফাইলের তথ্য */
+.lp-info { display: grid; grid-template-columns: minmax(0, 1fr); }
+.lp-info__row { padding: 14px 0; border-bottom: 1px solid var(--lp-line); }
+.lp-info__row:last-child { border-bottom: 0; }
+.lp-info__row dt { display: flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 500; color: var(--lp-ink-3); }
+.lp-info__row dt .lp-icon { width: 16px; height: 16px; }
+.lp-info__row dd { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-weight: 600; overflow-wrap: anywhere; }
+.lp-info__row dd .lp-iconbtn { width: 34px; height: 34px; }
+
+/* নোটিশ ও ইভেন্টের তালিকা */
+.lp-list { display: grid; gap: 12px; }
+.lp-item { padding: 16px; background: #fff; border: 1px solid var(--lp-line); border-radius: var(--lp-r-md); }
+
+.lp-notice.is-pinned { border-inline-start: 4px solid var(--lp-gold); }
+.lp-notice__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.lp-notice__title { font: 600 1.1rem / 1.4 var(--lp-font-head); overflow-wrap: anywhere; }
+.lp-notice__body { margin-top: 6px; color: var(--lp-ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+.lp-notice__body a { color: var(--lp-brand-3); text-decoration: underline; text-underline-offset: 2px; }
+.lp-notice__body.is-clamped { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.lp-more { margin-top: 6px; padding: 4px 0; color: var(--lp-brand-3); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.lp-notice__meta { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: .84rem; color: var(--lp-ink-3); }
+.lp-notice__meta .lp-icon { width: 15px; height: 15px; }
+
+.lp-event { display: flex; gap: 14px; }
+.lp-event__date {
+  flex: none; width: 58px; height: 66px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 12px; background: var(--lp-brand); color: #fff; line-height: 1.1;
+}
+.lp-event__day { font: 700 1.55rem var(--lp-font-head); }
+.lp-event__month { margin-top: 2px; font-size: .78rem; font-weight: 600; color: var(--lp-gold); }
+.lp-event__body { flex: 1; min-width: 0; }
+.lp-event__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.lp-event__title { font: 600 1.1rem / 1.4 var(--lp-font-head); overflow-wrap: anywhere; }
+.lp-when {
+  flex: none; padding: 3px 10px; border-radius: 999px;
+  background: var(--lp-sunken); color: var(--lp-ink-2);
+  font-size: .8rem; font-weight: 600; line-height: 1.5;
+}
+.lp-when--today { background: var(--lp-clay-strong); color: #fff; }
+.lp-when--soon { background: var(--lp-warn-bg); color: var(--lp-warn); }
+.lp-event__meta { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; font-size: .92rem; color: var(--lp-ink-2); }
+.lp-event__meta .lp-icon { width: 16px; height: 16px; margin-top: 4px; }
+.lp-event__desc { margin-top: 8px; color: var(--lp-ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+.lp-event__desc a { color: var(--lp-brand-3); text-decoration: underline; text-underline-offset: 2px; }
+.lp-event__add { margin-top: 12px; }
+
+.lp-empty { padding: 34px 16px; text-align: center; color: var(--lp-ink-3); }
+.lp-empty .lp-icon { width: 38px; height: 38px; margin: 0 auto 10px; color: var(--lp-line-2); }
+.lp-empty p { margin-bottom: 14px; }
+
+.lp-skel { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--lp-line); border-radius: var(--lp-r-md); }
+.lp-skel i { display: block; height: 12px; border-radius: 6px; background: var(--lp-sunken); animation: lp-pulse 1.4s ease-in-out infinite; }
+.lp-skel i:nth-child(1) { width: 38%; }
+.lp-skel i:nth-child(2) { width: 92%; }
+.lp-skel i:nth-child(3) { width: 64%; }
+@keyframes lp-pulse { 50% { opacity: .45; } }
+
+/* ══════════ ছোট পর্দা ══════════ */
+@media (max-width: 559px) {
+  .lp-hero__logout { width: 44px; padding: 0; }
+  .lp-hero__logout span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .lp-dialog {
+    width: 100%; max-width: 100%;
+    margin: auto 0 0;
+    padding-bottom: max(22px, env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+  .lp-dialog--sm { width: 100%; }
+  .lp-panel { padding: 16px; }
+  .lp-tab { padding: 0 12px; }
+  .lp-event__top { flex-direction: column; gap: 6px; }
+}
+
+/* ══════════ বড় পর্দা ══════════ */
+@media (min-width: 640px) {
+  .lp-info { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+  .lp-info__row--wide { grid-column: 1 / -1; }
+  .lp-info__row:nth-last-child(-n+2):not(.lp-info__row--wide) { border-bottom: 0; }
+}
+
+@media (min-width: 880px) {
+  .lp[data-view="auth"] .lp-shell { width: min(100% - 48px, 960px); }
+  .lp-auth { display: grid; grid-template-columns: 0.92fr 1.08fr; }
+  .lp-aside {
+    display: flex; align-items: center;
+    padding: 44px 36px;
+    background: var(--lp-brand-tint);
+    border-inline-end: 1px solid var(--lp-line);
+  }
+  .lp-auth__main { padding: 44px 44px 40px; }
+
+  .lp-feats { display: grid; gap: 30px; }
+  .lp-feats li { display: flex; gap: 14px; }
+  .lp-feats__icon {
+    flex: none; width: 46px; height: 46px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: #fff; color: var(--lp-brand); border: 1px solid #C9DDD7;
+  }
+  .lp-feats strong { display: block; font: 700 1.1rem var(--lp-font-head); color: var(--lp-brand); }
+  .lp-feats p { margin-top: 2px; font-size: .94rem; color: var(--lp-ink-2); }
+}
+
+@media (min-width: 900px) {
+  .lp-dash { grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .lp-dash__side { position: sticky; top: 92px; }
+  .lp-idcard__qr { flex-direction: column; text-align: center; gap: 8px; padding: 14px; }
+  .lp-idcard__qrsvg { width: min(100%, 190px); }
+}
+
+/* ══════════ হোভার — শুধু মাউস/ট্র্যাকপ্যাড আছে এমন ডিভাইসে (টাচে আটকে থাকে না) ══════════ */
+@media (hover: hover) {
+  .lp-input:hover { border-color: #77725F; }
+  .lp-back a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .lp-link:hover { color: var(--lp-brand); }
+  
+  .lp-control__btn:hover { background: var(--lp-sunken); }
+  .lp-btn--primary:hover:not(:disabled) { background: var(--lp-brand-2); }
+  .lp-btn--ghost:hover:not(:disabled) { border-color: var(--lp-brand); background: var(--lp-brand-tint); }
+  .lp-iconbtn:hover { background: var(--lp-sunken); }
+  .lp-iconbtn--on-dark:hover { background: rgba(255, 255, 255, .14); }
+  .lp-toast__x:hover { background: rgba(255, 255, 255, .16); }
+  .lp-idcard__qr:hover { background: #F7F5EE; }
+  .lp-tab:hover { background: var(--lp-sunken); }
+  .lp-hero__logout:hover { background: rgba(255, 255, 255, .12); border-color: #fff; }
+}
+
+/* ══════════ অ্যাক্সেসিবিলিটি ══════════ */
+@media (prefers-reduced-motion: reduce) {
+  .lp *, .lp *::before, .lp *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .lp-input, .lp-btn, .lp-item, .lp-panel, .lp-tabs, .lp-auth { border: 1px solid CanvasText; }
+  .lp-tab[aria-selected="true"] { border-bottom-color: Highlight; }
+  .lp-check input:checked + .lp-check__box { background: Highlight; }
 }

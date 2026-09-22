@@ -1,34 +1,276 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>অফলাইন | রূপসা জনকল্যাণ ফাউন্ডেশন</title>
-<meta name="theme-color" content="#0E3B36">
-<link rel="icon" type="image/png" href="icons/favicon.png">
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:'Hind Siliguri','Segoe UI',sans-serif;}
-  body{
-    min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(160deg,#0E3B36,#124A43);
-    color:#FBF5E9; text-align:center; padding:24px;
-  }
-  .box{ max-width:420px; }
-  .icon{ font-size:56px; margin-bottom:18px; }
-  h1{ font-size:1.4rem; margin-bottom:12px; }
-  p{ font-size:.95rem; line-height:1.7; opacity:.85; margin-bottom:26px; }
-  button{
-    background:#E3A73E; color:#1A2420; border:none; font-weight:700;
-    padding:12px 28px; border-radius:14px; font-size:.95rem; cursor:pointer;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অফলাইন | রূপসা জনকল্যাণ ফাউন্ডেশন</title>
+    <meta name="theme-color" content="#0E3B36">
+    <link rel="icon" type="image/png" href="icons/favicon.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-bg: #0b2b27;
+            --secondary-bg: #0E3B36;
+            --card-bg: #ffffff;
+            --text-dark: #1A2420;
+            --text-muted: #5e6b66;
+            --accent-color: #E3A73E;
+            --accent-hover: #c99335;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Hind Siliguri', 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Elegant minimal gradient, no glowing */
+            background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            max-width: 440px;
+            width: 100%;
+            padding: 48px 36px;
+            border-radius: 24px;
+            text-align: center;
+            /* Soft, realistic shadow (NO GLOW) */
+            box-shadow: 0 20px 40px var(--shadow-color), 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUpFade {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon-wrapper {
+            width: 88px;
+            height: 88px;
+            background-color: #fcf6eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px;
+            border: 1px solid rgba(227, 167, 62, 0.2);
+        }
+
+        .icon-wrapper svg {
+            width: 44px;
+            height: 44px;
+            stroke: var(--accent-color);
+        }
+
+        h1 {
+            color: var(--text-dark);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.3;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 36px;
+            font-weight: 400;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #1A2420;
+            border: none;
+            font-weight: 600;
+            padding: 16px 36px;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid #1A2420;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn.loading .spinner {
+            display: block;
+        }
+        
+        .btn.loading .btn-text {
+            display: none;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2e7d32;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            bottom: 40px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card {
+                padding: 40px 24px;
+            }
+            h1 { font-size: 1.5rem; }
+            p { font-size: 0.95rem; }
+        }
+    </style>
 </head>
 <body>
-  <div class="box">
-    <div class="icon">📡</div>
-    <h1>ইন্টারনেট সংযোগ নেই</h1>
-    <p>মনে হচ্ছে আপনার ইন্টারনেট সংযোগ বিচ্ছিন্ন। সংযোগ ফিরে এলে অ্যাপটি আবার স্বাভাবিকভাবে কাজ করবে।</p>
-    <button onclick="window.location.reload()">আবার চেষ্টা করুন</button>
-  </div>
+
+    <div class="container">
+        <div class="card">
+            <!-- Modern SVG Icon instead of Emoji -->
+            <div class="icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                    <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                    <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+                    <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+            </div>
+            
+            <h1>ইন্টারনেট সংযোগ নেই</h1>
+            <p>আপনার ডিভাইসে কোনো ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না। অনুগ্রহ করে আপনার ওয়াইফাই বা মোবাইল ডেটা চেক করুন।</p>
+            
+            <button class="btn" id="retryBtn" onclick="handleRetry()">
+                <span class="btn-text">আবার চেষ্টা করুন</span>
+                <div class="spinner"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast for online status -->
+    <div class="toast" id="onlineToast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        ইন্টারনেট সংযোগ ফিরে এসেছে!
+    </div>
+
+    <script>
+        const retryBtn = document.getElementById('retryBtn');
+        const toast = document.getElementById('onlineToast');
+
+        // Manual Retry Button Logic
+        function handleRetry() {
+            // Add loading state
+            retryBtn.classList.add('loading');
+            retryBtn.style.pointerEvents = 'none';
+
+            // Simulate network check delay
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    window.location.reload();
+                } else {
+                    // Remove loading state if still offline
+                    retryBtn.classList.remove('loading');
+                    retryBtn.style.pointerEvents = 'auto';
+                }
+            }, 800); // 800ms delay for realistic feel
+        }
+
+        // Automatic Network Status Detection
+        window.addEventListener('online', () => {
+            // Show success toast
+            toast.classList.add('show');
+            
+            // Set button to loading state
+            retryBtn.classList.add('loading');
+            retryBtn.style.pointerEvents = 'none';
+
+            // Reload automatically after 1.5 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        });
+
+        window.addEventListener('offline', () => {
+            toast.classList.remove('show');
+            retryBtn.classList.remove('loading');
+            retryBtn.style.pointerEvents = 'auto';
+        });
+
+        // Initial check on load
+        if (navigator.onLine) {
+            toast.classList.add('show');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    </script>
 </body>
 </html>

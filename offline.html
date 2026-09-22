@@ -234,7 +234,9 @@
             // Simulate network check delay
             setTimeout(() => {
                 if (navigator.onLine) {
-                    window.location.reload();
+                    window.location.href = 'index.html';
+
+
                 } else {
                     // Remove loading state if still offline
                     retryBtn.classList.remove('loading');
@@ -254,7 +256,9 @@
 
             // Reload automatically after 1.5 seconds
             setTimeout(() => {
-                window.location.reload();
+                window.location.href = 'index.html';
+
+
             }, 1500);
         });
 
@@ -268,7 +272,7 @@
         if (navigator.onLine) {
             toast.classList.add('show');
             setTimeout(() => {
-                window.location.reload();
+                window.location.href = 'index.html';
             }, 1000);
         }
     </script>

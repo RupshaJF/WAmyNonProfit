@@ -1,5 +1,5 @@
 /* verify.html — Firestore থেকে মেম্বার আইডি লুকআপ (মূল ভেরিফিকেশন লজিক) */
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 import { db } from './firebase-init.js';
 import { state } from './state.js';
 import { showView } from './views.js';
@@ -24,14 +24,14 @@ export async function verifyMember() {
     }
 
     try {
-        const q = query(collection(db, "members"), where("member_id", "==", memberId));
-        const querySnapshot = await getDocs(q);
+        /* সদস্যের পূর্ণ তথ্য (`members`) আর পাবলিক নয় — শুধু ছোট্ট পাবলিক অংশ (`public_members`), একটা আইডি ধরে */
+        const snap = await getDoc(doc(db, "public_members", memberId));
 
         setTimeout(() => {
-            if (querySnapshot.empty) {
+            if (!snap.exists()) {
                 showError(state.lang === 'bn' ? `সদস্য আইডি <strong>${memberId}</strong> ডাটাবেসে পাওয়া যায়নি।` : `Member ID <strong>${memberId}</strong> not found in database.`);
             } else {
-                const memberData = querySnapshot.docs[0].data();
+                const memberData = snap.data();
 
                 if (memberData.status === 'blocked' || memberData.status === 'rejected') {
                     showError(state.lang === 'bn' ? `সদস্য আইডি <strong>${memberId}</strong> বর্তমানে নিষ্ক্রিয় করা হয়েছে।` : `Member ID <strong>${memberId}</strong> has been deactivated.`);

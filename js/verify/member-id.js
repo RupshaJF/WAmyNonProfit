@@ -8,7 +8,10 @@ export const getMemberId = () => {
         id = pathParts[pathParts.length - 1];
         if (id === 'verify.html' || id === '') return null;
     }
-    return id ? id.trim().toUpperCase() : null;
+    if (!id) return null;
+    id = id.trim().toUpperCase();
+    /* শুধু A-Z, 0-9 ও ড্যাশ — এর বাইরে কিছু থাকলে আইডি ধরাই হয় না (HTML/পাথ ইনজেকশন বন্ধ) */
+    return /^[A-Z0-9-]{3,40}$/.test(id) ? id : null;
 };
 
 export const maskMobile = (number) => {

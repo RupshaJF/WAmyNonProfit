@@ -2,6 +2,9 @@
 import { dictionary } from './dictionary.js';
 import { maskMobile } from './member-id.js';
 
+/* ডেটাবেসের লেখা কখনো HTML হিসেবে চলবে না */
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 export const renderDynamicInfo = (data, lang) => {
     const infoContainer = document.getElementById('member-info-container');
     const dict = dictionary[lang];
@@ -11,7 +14,7 @@ export const renderDynamicInfo = (data, lang) => {
             <span class="text-gray-500 dark:text-gray-400 text-sm flex items-center">
                 <i class="fas ${icon} w-5 text-gray-400 dark:text-gray-500"></i> ${dict[icon] || labelKey}
             </span>
-            <span class="font-semibold text-right ${valueClass}">${value || '---'}</span>
+            <span class="font-semibold text-right ${valueClass}">${esc(value) || '---'}</span>
         </div>
     `;
 

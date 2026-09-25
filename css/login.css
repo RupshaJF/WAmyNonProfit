@@ -300,6 +300,11 @@
 .lp-banner .lp-icon { margin-top: 0; }
 .lp-auth__main .lp-banner { margin-top: 16px; margin-bottom: 0; }
 
+/* ইমেইল ভেরিফিকেশন (ফলব্যাক) */
+.lp-verify { margin-top: 16px; }
+.lp-verify .lp-alert { margin-top: 0; }
+.lp-verify__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
 /* ইনপুট ঝাঁকুনি (ভুল পাসওয়ার্ড) */
 .is-nudge { animation: lp-nudge .28s ease-in-out; }
 @keyframes lp-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }

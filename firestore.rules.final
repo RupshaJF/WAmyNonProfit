@@ -1,0 +1,207 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RJF — হাই-সিকিউরিটি Firestore Rules (চূড়ান্ত / ধাপ ৫)
+//
+//  মূল নীতি:
+//   ১) ডিফল্ট সব বন্ধ (deny-by-default); যা খোলা তা নিচে স্পষ্ট করে লেখা
+//   ২) সদস্যের ব্যক্তিগত তথ্য (`members`) শুধু অ্যাডমিন ও সংশ্লিষ্ট সদস্য নিজে (Firebase Auth-এ
+//      ইমেইল ভেরিফাইড লগইন) দেখতে পারবেন — সবার জন্য পড়া বন্ধ
+//   ৩) পাসওয়ার্ড আর Firestore-এ থাকে না; সব অথেন্টিকেশন Firebase Authentication-এ
+//   ৪) verify.html শুধু `public_members`-এর ছোট্ট পাবলিক অংশ পড়ে (তালিকা/এনুমারেশন বন্ধ)
+//   ৫) নতুন আবেদন (unauthenticated) শুধু কঠোরভাবে যাচাই করা আকারে, এবং ইমেইল ইউনিক থাকার শর্তে
+//   ৬) নোটিশ/ইভেন্ট শুধু অনুমোদিত সদস্য ও অ্যাডমিন পড়তে পারবেন
+//
+//  ⚠️ এই ফাইল পাবলিশের আগে LOGIN_UPGRADE_GUIDE.md-এর "রোলআউট" ধাপগুলো অবশ্যই মানুন।
+// ═══════════════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ───────────────────────────── সাধারণ হেল্পার ─────────────────────────────
+
+    // অ্যাডমিনদের ইমেইল — অবশ্যই ছোট হাতের অক্ষরে; admin/js/admin-config.js-এর সাথে মিলিয়ে রাখুন
+    function adminEmails() {
+      return ['imran.info.me@gmail.com'];
+    }
+
+    // ঐচ্ছিক — অতিরিক্ত সুরক্ষা: অ্যাডমিনের UID (Firebase Console → Authentication → Users → User UID)
+    // এখানে বসালে ইমেইল + UID দুটোই মিলতে হবে। ফাঁকা [] থাকলে শুধু ইমেইল দেখা হয়।
+    function adminUids() {
+      return [];
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.get('email', '').lower() in adminEmails()
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && (adminUids().size() == 0 || request.auth.uid in adminUids());
+    }
+
+    // ইমেইল ভেরিফাইড লগইন করা ইউজার (পাসওয়ার্ড রিসেট লিংকে ক্লিক করলেই ভেরিফাইড হয়ে যায়)
+    function isVerifiedUser() {
+      return request.auth != null
+        && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '') != '';
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // ইমেইল ইনডেক্স ডকুমেন্টের কী — ছোট হাতের, বৈধ ইমেইল আকার
+    function isEmailKey(k) {
+      return k is string
+        && k.size() <= 254
+        && k.matches('^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$');
+    }
+
+    function text(v, minLen, maxLen) {
+      return v is string && v.size() >= minLen && v.size() <= maxLen;
+    }
+
+    function indexPath(email) {
+      return /databases/$(database)/documents/member_emails/$(email);
+    }
+
+    // অনুমোদিত (approved) সদস্য কিনা — ইনডেক্স ডকুমেন্টের status দেখে
+    function isApprovedMember() {
+      return isVerifiedUser()
+        && exists(indexPath(myEmail()))
+        && get(indexPath(myEmail())).data.status == 'approved';
+    }
+
+    // ───────────────────────────── MEMBERS (ব্যক্তিগত) ─────────────────────────────
+    //  - নতুন আবেদন: registration.js (কোনো লগইন ছাড়া) — শুধু কঠোর যাচাইয়ের পর
+    //  - পড়া: অ্যাডমিন, অথবা যে সদস্যের ইমেইল হুবহু মেলে (ভেরিফাইড লগইন)
+    //  - পরিবর্তন/ডিলিট: শুধু অ্যাডমিন
+    //  - তালিকা (list): শুধু অ্যাডমিন — অন্য কেউ সব সদস্যের তালিকা পাবে না
+    function isValidApplication(id) {
+      let d = request.resource.data;
+      return id.size() == 20
+        && d.keys().hasOnly([
+             'member_id', 'full_name', 'father_name', 'mother_name', 'date_of_birth', 'gender',
+             'blood_group', 'mobile_number', 'email', 'present_address', 'permanent_address',
+             'education', 'occupation', 'membership_type', 'reference_name', 'reference_mobile',
+             'status', 'submittedAt'
+           ])
+        && d.keys().hasAll([
+             'member_id', 'full_name', 'father_name', 'mother_name', 'date_of_birth', 'gender',
+             'blood_group', 'mobile_number', 'email', 'present_address', 'permanent_address',
+             'education', 'occupation', 'membership_type', 'reference_name', 'reference_mobile',
+             'status', 'submittedAt'
+           ])
+        && d.status == 'pending'
+        && d.submittedAt == request.time
+        && d.member_id is string && d.member_id.matches('^RJF-20[0-9]{2}-[0-9]{4}$')
+        && text(d.full_name, 2, 100)
+        && text(d.father_name, 2, 100)
+        && text(d.mother_name, 2, 100)
+        && d.date_of_birth is string && d.date_of_birth.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.gender in ['পুরুষ', 'মহিলা', 'অন্যান্য']
+        && d.blood_group in ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+        && d.mobile_number is string && d.mobile_number.matches('^01[3-9][0-9]{8}$')
+        && isEmailKey(d.email)
+        && text(d.present_address, 3, 300)
+        && text(d.permanent_address, 3, 300)
+        && text(d.education, 1, 60)
+        && text(d.occupation, 1, 100)
+        && text(d.membership_type, 1, 60)
+        && text(d.reference_name, 0, 100)
+        && text(d.reference_mobile, 0, 20)
+        // একই ব্যাচে ইমেইল-ইনডেক্স তৈরি হতে হবে (এটাই ইমেইল ইউনিক রাখে) এবং সেটা এই ডকুমেন্টকেই নির্দেশ করবে
+        && existsAfter(indexPath(d.email))
+        && getAfter(indexPath(d.email)).data.member_doc == id
+        && getAfter(indexPath(d.email)).data.status == 'pending';
+    }
+
+    match /members/{memberId} {
+      allow get: if isAdmin()
+        || (isVerifiedUser() && resource.data.email == myEmail());
+      allow list: if isAdmin();
+      allow create: if isAdmin() || isValidApplication(memberId);
+      allow update, delete: if isAdmin();
+    }
+
+    // ───────────────────────────── MEMBER_EMAILS (ইনডেক্স) ─────────────────────────────
+    //  ডকুমেন্ট আইডি = সদস্যের ছোট হাতের ইমেইল; ডেটা: { member_doc, status }
+    //  কাজ: (১) একই ইমেইলে দুইবার আবেদন আটকানো (২) সদস্য নিজের ডকুমেন্ট খুঁজে পাওয়া
+    //       (৩) নোটিশ/ইভেন্ট দেখার অনুমতি যাচাই
+    function isValidIndexCreate(k) {
+      let d = request.resource.data;
+      return isEmailKey(k)
+        && d.keys().hasOnly(['member_doc', 'status'])
+        && d.keys().hasAll(['member_doc', 'status'])
+        && d.status == 'pending'
+        && d.member_doc is string && d.member_doc.size() == 20
+        && existsAfter(/databases/$(database)/documents/members/$(d.member_doc))
+        && getAfter(/databases/$(database)/documents/members/$(d.member_doc)).data.email == k;
+    }
+
+    match /member_emails/{emailKey} {
+      allow get: if isAdmin()
+        || (isVerifiedUser() && emailKey == myEmail());
+      allow list: if isAdmin();
+      allow create: if isAdmin() || isValidIndexCreate(emailKey);
+      allow update, delete: if isAdmin();
+    }
+
+    // ───────────────────────────── PUBLIC_MEMBERS (verify.html) ─────────────────────────────
+    //  শুধু অনুমোদিত সদস্যের পাবলিক তথ্য (অ্যাডমিন প্যানেল লেখে)। একটা করে ID দিয়ে পড়া যায়,
+    //  কিন্তু তালিকা বা সার্চ করা যায় না। মোবাইল নম্বর শুধু মাস্ক করা (017*****678) আকারে।
+    function isValidPublicDoc() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+               'member_id', 'status', 'full_name', 'occupation', 'membership_type',
+               'blood_group', 'gender', 'mobile_number', 'permanent_address', 'photo_url'
+             ])
+        && d.keys().hasAll(['member_id', 'status'])
+        && d.status in ['approved', 'blocked']
+        && text(d.member_id, 3, 40)
+        && text(d.get('full_name', ''), 0, 100)
+        && text(d.get('occupation', ''), 0, 100)
+        && text(d.get('membership_type', ''), 0, 60)
+        && text(d.get('blood_group', ''), 0, 4)
+        && text(d.get('gender', ''), 0, 20)
+        && text(d.get('permanent_address', ''), 0, 300)
+        && (d.get('mobile_number', '') == '' || d.mobile_number.matches('^[0-9]{3}\\*{5}[0-9]{3}$'))
+        // "//evil.com/x" ব্রাউজারে https://evil.com/x হিসেবে লোড হয় (protocol-relative) — তাই
+        // সাইট-রিলেটিভ পাথের প্রথম "/"-এর পরে আরেকটা "/" নিষেধ (RE2 lookahead সমর্থন করে না, তাই [^/] দিয়ে)
+        && (d.get('photo_url', '') == '' || (text(d.photo_url, 1, 600) && d.photo_url.matches('^(https://.+|/[^/].*)$')));
+    }
+
+    match /public_members/{publicId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && isValidPublicDoc();
+      allow delete: if isAdmin();
+    }
+
+    // ───────────────────────────── পাবলিক পেজের তালিকা ─────────────────────────────
+    match /team_members/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /donors/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ───────────────────────────── সদস্যদের জন্য (নোটিশ/ইভেন্ট) ─────────────────────────────
+    match /notices/{docId} {
+      allow read: if isAdmin() || isApprovedMember();
+      allow write: if isAdmin();
+    }
+
+    match /events/{docId} {
+      allow read: if isAdmin() || isApprovedMember();
+      allow write: if isAdmin();
+    }
+
+    // ───────────────────────────── বাকি সবকিছু বন্ধ ─────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -373,44 +373,81 @@ RJF._wireRegistrationPage = function () {
       spinner.classList.remove('show');
     }
 
+    /* ── আবেদনের তথ্য: শুধু নির্দিষ্ট ফিল্ড (firestore.rules-এর তালিকার সাথে মেলে) ── */
+    var APPLICANT_FIELDS = ['member_id', 'full_name', 'father_name', 'mother_name', 'date_of_birth', 'gender',
+      'blood_group', 'mobile_number', 'email', 'present_address', 'permanent_address', 'education',
+      'occupation', 'membership_type', 'reference_name', 'reference_mobile'];
+
+    function buildPayload(formData, fs) {
+      var p = {};
+      APPLICANT_FIELDS.forEach(function (k) {
+        var v = formData.get(k);
+        p[k] = (v === null || v === undefined) ? '' : String(v).trim();
+      });
+      p.email = emailInput;                 /* সবসময় ছোট হাতের — ইমেইল ইনডেক্স ও লগইনের জন্য */
+      p.status = 'pending';
+      p.submittedAt = fs.serverTimestamp();  /* rules: সার্ভারের সময়ই দিতে হবে */
+      return p;
+    }
+
+    /* firestore.rules যেসব শর্তে আবেদন নেয়, ব্রাউজারেই সেগুলো আগে মিলিয়ে ভুল হলে পরিষ্কার বার্তা দেখানো */
+    function checkLimits(p) {
+      var len = function (v) { return Array.from(v).length; };
+      if (len(p.full_name) < 2 || len(p.full_name) > 100 || len(p.father_name) < 2 || len(p.father_name) > 100 ||
+          len(p.mother_name) < 2 || len(p.mother_name) > 100) return 'নাম কমপক্ষে ২ ও সর্বোচ্চ ১০০ অক্ষরের হতে হবে।';
+      if (len(p.present_address) < 3 || len(p.present_address) > 300 || len(p.permanent_address) < 3 || len(p.permanent_address) > 300)
+        return 'ঠিকানা কমপক্ষে ৩ ও সর্বোচ্চ ৩০০ অক্ষরের হতে হবে।';
+      if (len(p.occupation) < 1 || len(p.occupation) > 100 || len(p.education) > 60 || len(p.membership_type) > 60 ||
+          len(p.reference_name) > 100 || len(p.reference_mobile) > 20) return 'কোনো ঘরের লেখা অনুমোদিত সীমার চেয়ে বড়।';
+      if (!/^01[3-9][0-9]{8}$/.test(p.mobile_number)) return 'মোবাইল নম্বর সঠিক নয় (যেমন 01XXXXXXXXX)।';
+      if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(p.email) || p.email.length > 254) return 'ইমেইল ঠিকানা সঠিক নয়।';
+      if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(p.date_of_birth)) return 'জন্ম তারিখ সঠিক নয়।';
+      return null;
+    }
+
     RJF._getRegFirebase().then(function (firebase) {
       var fs = firebase.fs;
       var db = firebase.db;
-      var q = fs.query(fs.collection(db, 'members'), fs.where('email', '==', emailInput));
 
-      return fs.getDocs(q).then(function (snapshot) {
-        if (!snapshot.empty) {
-          fail(d.duplicateEmailMsg);
-          return null;
-        }
+      var year = new Date().getFullYear();
+      var random = Math.floor(1000 + Math.random() * 9000);
+      var generatedId = 'RJF-' + year + '-' + random;
+      document.getElementById('regMemberId').value = generatedId;
 
-        var year = new Date().getFullYear();
-        var random = Math.floor(1000 + Math.random() * 9000);
-        var generatedId = 'RJF-' + year + '-' + random;
-        document.getElementById('regMemberId').value = generatedId;
+      var formData = new FormData(form);
+      var payload = buildPayload(formData, fs);
+      var problem = checkLimits(payload);
+      if (problem) { fail(problem); return null; }
 
-        var formData = new FormData(form);
-        var dataObject = {};
-        formData.forEach(function (value, key) { dataObject[key] = value; });
+      /* একই ব্যাচে: আবেদন + ইমেইল-ইনডেক্স। ইনডেক্স আগে থেকে থাকলে পুরো ব্যাচ বাতিল হয় =
+         একই ইমেইলে দুইবার আবেদন সম্ভব নয় (কাউকে কিছু না পড়িয়েই, সার্ভার-সাইডে নিশ্চিত) */
+      var memberRef = fs.doc(fs.collection(db, 'members'));
+      var indexRef = fs.doc(db, 'member_emails', emailInput);
+      var batch = fs.writeBatch(db);
+      batch.set(memberRef, payload);
+      batch.set(indexRef, { member_doc: memberRef.id, status: 'pending' });
 
-        return fs.addDoc(fs.collection(db, 'members'), Object.assign({}, dataObject, { submittedAt: new Date(), status: 'pending' }))
-          .then(function () {
-            var formspreePromise = fetch(d.formspreeUrl, {
-              method: 'POST',
-              body: formData,
-              headers: { 'Accept': 'application/json' }
-            }).catch(function () {});
+      return batch.commit().then(function () {
+        var formspreePromise = fetch(d.formspreeUrl, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        }).catch(function () {});
 
-            var emailjsPromise = RJF._waitForEmailjs().then(function (emailjs) {
-              try { emailjs.init(d.emailjsPublicKey); } catch (err) {}
-              return emailjs.sendForm(d.emailjsServiceId, d.emailjsTemplateId, form).catch(function () {});
-            });
+        var emailjsPromise = RJF._waitForEmailjs().then(function (emailjs) {
+          try { emailjs.init(d.emailjsPublicKey); } catch (err) {}
+          return emailjs.sendForm(d.emailjsServiceId, d.emailjsTemplateId, form).catch(function () {});
+        });
 
-            return Promise.allSettled([formspreePromise, emailjsPromise]).then(function () {
-              RJF._regToast(d.successMsgPrefix + generatedId, false);
-              resetForm();
-            });
-          });
+        return Promise.allSettled([formspreePromise, emailjsPromise]).then(function () {
+          RJF._regToast(d.successMsgPrefix + generatedId, false);
+          resetForm();
+        });
+      }).catch(function (err) {
+        console.error(err);
+        /* permission-denied = ইমেইল ইনডেক্স আগে থেকেই আছে (ডুপ্লিকেট আবেদন) */
+        if (err && err.code === 'permission-denied') fail(d.duplicateEmailMsg);
+        else fail(d.genericErrorMsg);
       });
     }).catch(function (err) {
       console.error(err);

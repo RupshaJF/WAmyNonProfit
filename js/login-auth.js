@@ -1,10 +1,12 @@
 /* ==========================================================================
-   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login: অথেন্টিকেশন লেয়ার
-   - আইডি/ইমেইল/মোবাইল শনাক্তকরণ ও নর্মালাইজেশন
-   - Firestore থেকে সদস্য খোঁজা ও যাচাই
-   - ভুল-চেষ্টার সীমা (progressive lockout), সেশন, পাসওয়ার্ড রিসেট
-   - EmailJS সরাসরি REST API দিয়ে (SDK লাগে না)
-   ⚠️ যাচাই এখনো ক্লায়েন্ট-সাইডে (Firestore-এর stored_password ফিল্ড) — বিস্তারিত LOGIN_UPGRADE_GUIDE.md
+   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login: অথেন্টিকেশন লেয়ার (v3 — Firebase Authentication)
+
+   ✔ পাসওয়ার্ড আর Firestore-এ থাকে না, ব্রাউজারেও যাচাই হয় না — যাচাই করে Firebase Authentication (সার্ভারে)
+   ✔ ভুল-পাসওয়ার্ডের রেট-লিমিট Firebase-এর সার্ভারে (auth/too-many-requests); এখানে শুধু অতিরিক্ত UX-সীমা
+   ✔ সদস্যের তথ্য পড়া যায় শুধু ইমেইল-ভেরিফাইড লগইন করা নিজের ডকুমেন্ট (firestore.rules নিশ্চিত করে)
+   ✔ পাসওয়ার্ড সেট/রিসেট: Firebase নিজেই ইমেইলে লিংক পাঠায় — কোথাও সাধারণ টেক্সট পাসওয়ার্ড নেই
+
+   প্রবাহ: signIn → member_emails/{ইমেইল} (নিজের) → members/{member_doc} (নিজের) → ড্যাশবোর্ড
    ========================================================================== */
 (function (global) {
   'use strict';
@@ -14,7 +16,7 @@
   const cfg = () => RJF.loginConfig || {};
 
   /* ────────────────────────────────────────────────
-     Firebase (lazy) — ব্যর্থ হলে ক্যাশ মুছে যাতে আবার চেষ্টা করা যায়
+     Firebase (lazy): App + Auth + Firestore — ব্যর্থ হলে ক্যাশ মুছে যাতে আবার চেষ্টা করা যায়
      ────────────────────────────────────────────── */
   let fbPromise = null;
 
@@ -22,11 +24,17 @@
     if (fbPromise) return fbPromise;
     const c = cfg();
     const base = 'https://www.gstatic.com/firebasejs/' + c.firebaseSdkVersion + '/';
-    fbPromise = Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-firestore.js')])
-      .then(([appMod, fsMod]) => {
+    fbPromise = Promise.all([
+      import(base + 'firebase-app.js'),
+      import(base + 'firebase-auth.js'),
+      import(base + 'firebase-firestore.js')
+    ])
+      .then(([appMod, authMod, fsMod]) => {
         let app;
         try { app = appMod.getApp('rjf-login'); } catch (e) { app = appMod.initializeApp(c.firebaseConfig, 'rjf-login'); }
-        return { app, fs: fsMod, db: fsMod.getFirestore(app) };
+        const auth = authMod.getAuth(app); /* Firestore-এর আগে — যাতে Firestore এই অ্যাপের টোকেন ব্যবহার করে */
+        const db = fsMod.getFirestore(app);
+        return { app, auth, authMod, db, fs: fsMod };
       })
       .catch((err) => { fbPromise = null; throw err; });
     return fbPromise;
@@ -40,8 +48,13 @@
     else setTimeout(run, 800);
   };
 
+  const actionSettings = () => ({
+    url: cfg().authContinueUrl || (global.location.origin + '/#/login'),
+    handleCodeInApp: false
+  });
+
   /* ────────────────────────────────────────────────
-     এরর শ্রেণিবিন্যাস
+     এরর শ্রেণিবিন্যাস (Firebase Auth + Firestore + নেটওয়ার্ক)
      ────────────────────────────────────────────── */
   lp.classifyError = (e) => {
     const code = String((e && e.code) || '');
@@ -49,80 +62,29 @@
     const both = code + ' ' + msg;
     if (code === 'timeout' || msg === 'timeout') return 'TIMEOUT';
     if (global.navigator && navigator.onLine === false) return 'OFFLINE';
+    if (/^auth\/(invalid-credential|wrong-password|user-not-found|invalid-login-credentials)$/.test(code)) return 'INVALID';
+    if (code === 'auth/too-many-requests') return 'RATE';
+    if (code === 'auth/user-disabled') return 'DENIED';
+    if (code === 'auth/invalid-email' || code === 'auth/missing-email') return 'BAD_IDENTIFIER';
+    if (code === 'auth/operation-not-allowed' || code === 'auth/admin-restricted-operation') return 'CONFIG';
     if (/permission-denied/i.test(both)) return 'PERMISSION';
     if (/resource-exhausted|quota/i.test(both)) return 'BUSY';
-    if (/unavailable|network|failed to fetch|load failed|importing|module|dynamically imported/i.test(both)) return 'NETWORK';
+    if (/auth\/network-request-failed|unavailable|network|failed to fetch|load failed|importing|module|dynamically imported/i.test(both)) return 'NETWORK';
     return 'ERROR';
   };
 
   /* ────────────────────────────────────────────────
-     আইডেন্টিফায়ার পার্সার — সদস্য আইডি / ইমেইল / মোবাইল
-     - বাংলা অঙ্ক, ড্যাশ/স্পেস ভুল, "1234" (শুধু শেষ ৪ ডিজিট) সবই বোঝে
+     ইমেইল পার্সার — ছোট হাতের করে, অদৃশ্য অক্ষর/স্পেস বাদ দিয়ে
      ────────────────────────────────────────────── */
-  lp.parseIdentifier = (raw, now) => {
-    const c = cfg();
-    const t = lp.cleanInput(raw);
+  lp.parseEmail = (raw) => {
+    const t = lp.cleanInput(raw).replace(/\s+/g, '');
     if (!t) return { kind: 'empty', input: '' };
-
-    if (t.includes('@')) {
-      const email = t.replace(/\s+/g, '');
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { kind: 'invalid', input: t };
-      /* Firestore-এ কেস-ইনসেনসিটিভ কুয়েরি নেই, তাই সম্ভাব্য রূপগুলো একসাথে খোঁজা হয়:
-         যেমন লেখা হয়েছে / ছোট হাতের / প্রথম অক্ষর বড় (ফোনের কীবোর্ডে সাধারণ) */
-      const lower = email.toLowerCase();
-      const cap = lower.charAt(0).toUpperCase() + lower.slice(1);
-      return {
-        kind: 'email', input: t, value: lower, display: lower,
-        candidates: Array.from(new Set([email, lower, cap]))
-      };
-    }
-
-    const compact = t.replace(/[\s\-_.()+]/g, '').toUpperCase();
-
-    /* মোবাইল: 01XXXXXXXXX, +8801XXXXXXXXX, 8801XXXXXXXXX, 1XXXXXXXXX */
-    let m = /^(?:88)?(01[3-9]\d{8})$/.exec(compact) || /^(1[3-9]\d{8})$/.exec(compact);
-    if (m) {
-      const mobile = m[1].charAt(0) === '0' ? m[1] : '0' + m[1];
-      return { kind: 'mobile', input: t, value: mobile, display: mobile, candidates: [mobile] };
-    }
-
-    /* সদস্য আইডি: RJF-2026-1234 / RJF20261234 / 2026-1234 / 1234 */
-    m = /^(?:RJF)?(?:(20\d{2}))?(\d{4})$/.exec(compact);
-    if (m) {
-      const suffix = m[2];
-      const years = [];
-      if (m[1]) {
-        years.push(Number(m[1]));
-      } else {
-        const y = (now || new Date()).getFullYear();
-        const min = Math.min(c.idMinYear || 2025, y);
-        for (let v = y; v >= min; v--) years.push(v);
-      }
-      const candidates = years.map((v) => 'RJF-' + v + '-' + suffix);
-      return { kind: 'id', input: t, value: candidates[0], display: candidates[0], candidates, partial: !m[1] };
-    }
-
-    return { kind: 'invalid', input: t };
+    if (t.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t)) return { kind: 'invalid', input: t };
+    const v = t.toLowerCase();
+    return { kind: 'email', input: t, value: v, display: v };
   };
 
-  /* ────────────────────────────────────────────────
-     সদস্য খোঁজা
-     ────────────────────────────────────────────── */
-  lp.findMembers = async (parsed) => {
-    const c = cfg();
-    const { fs, db } = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout');
-    const field = parsed.kind === 'id' ? 'member_id' : parsed.kind === 'email' ? 'email' : 'mobile_number';
-    const list = parsed.candidates;
-    const constraint = list.length > 1 ? fs.where(field, 'in', list) : fs.where(field, '==', list[0]);
-    const snap = await lp.withTimeout(
-      fs.getDocs(fs.query(fs.collection(db, 'members'), constraint)),
-      c.queryTimeoutMs,
-      'timeout'
-    );
-    return snap.docs.map((d) => ({ id: d.id, ref: d.ref, data: d.data() || {} }));
-  };
-
-  /* সেশনে যা রাখা হবে — stored_password কখনোই নয় */
+  /* সেশনে/স্ক্রিনে যা রাখা হবে (পাসওয়ার্ড নেই — আর ডেটাবেসেও নেই) */
   lp.toProfile = (data) => ({
     member_id: data.member_id || '',
     full_name: data.full_name || 'সদস্য',
@@ -140,21 +102,8 @@
   const isDenied = (status) => (cfg().deniedStatuses || []).indexOf(String(status || '').toLowerCase()) !== -1;
   lp.isDeniedStatus = isDenied;
 
-  /* পাসওয়ার্ড বদলালে অন্য ডিভাইসের সেশন বাতিল করার জন্য ছোট্ট স্ট্যাম্প (SHA-256-এর প্রথম ৮ বাইট) */
-  lp.pwStamp = async (memberId, password) => {
-    try {
-      const subtle = global.crypto && global.crypto.subtle;
-      if (!subtle) return null;
-      const buf = await subtle.digest('SHA-256', new TextEncoder().encode(memberId + '|' + password));
-      return Array.from(new Uint8Array(buf).slice(0, 8)).map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch (e) {
-      return null;
-    }
-  };
-
   /* ────────────────────────────────────────────────
-     ভুল-চেষ্টার সীমা (এই ডিভাইসে) — ৫ বার ভুল হলে ৩০ সে., তারপর ৬০ সে., ২ মি., ৫ মি., ১৫ মি.
-     ⚠️ এটা ইউজার-স্তরের সুরক্ষা; সার্ভার-সাইড rate limit নয়
+     অতিরিক্ত UX-সীমা (এই ডিভাইসে) — আসল রেট-লিমিট Firebase সার্ভারেই
      ────────────────────────────────────────────── */
   const GUARD_KEY = 'rjf_login_guard';
 
@@ -202,70 +151,176 @@
   lp.guard = { check: guardCheck, fail: guardFail, clear: () => lp.ls.remove(GUARD_KEY) };
 
   /* ────────────────────────────────────────────────
-     লগইন
+     সাইন-আউট
      ────────────────────────────────────────────── */
-  lp.authenticate = async (rawId, password) => {
-    const lock = guardCheck();
-    if (lock.locked) return { ok: false, code: 'LOCKED', retryAfter: lock.remaining };
-
-    const parsed = lp.parseIdentifier(rawId);
-    if (parsed.kind === 'empty' || parsed.kind === 'invalid') return { ok: false, code: 'BAD_IDENTIFIER' };
-
-    let docs;
+  lp.signOutFirebase = async () => {
     try {
-      docs = await lp.findMembers(parsed);
-    } catch (e) {
-      console.error('Login lookup error:', e);
-      return { ok: false, code: lp.classifyError(e) };
-    }
-
-    const match = docs.find((d) => {
-      const sp = d.data.stored_password;
-      return sp != null && String(sp).length > 0 && lp.timingSafeEqual(String(sp), password);
-    });
-
-    if (!match) {
-      const g = guardFail();
-      return { ok: false, code: 'INVALID', attemptsLeft: g.attemptsLeft, locked: g.locked, retryAfter: g.remaining };
-    }
-
-    /* সঠিক পাসওয়ার্ড কিন্তু সদস্যপদ নিষ্ক্রিয় — এটা ভুল-চেষ্টা হিসেবে গোনা হয় না */
-    if (isDenied(match.data.status)) return { ok: false, code: 'DENIED' };
-
-    lp.guard.clear();
-    const member = lp.toProfile(match.data);
-    const stamp = await lp.pwStamp(member.member_id, String(match.data.stored_password));
-    return { ok: true, member, stamp };
-  };
-
-  /* ব্যাকগ্রাউন্ডে সেশন যাচাই: সদস্য আছেন কিনা, নিষ্ক্রিয় কিনা, পাসওয়ার্ড বদলেছে কিনা */
-  lp.revalidate = async (session) => {
-    const id = session.member.member_id;
-    let docs;
-    try {
-      docs = await lp.findMembers({ kind: 'id', candidates: [id] });
-    } catch (e) {
-      return { status: 'offline' };
-    }
-    const same = docs.filter((d) => d.data.member_id === id);
-    if (!same.length) return { status: 'gone' };
-
-    let chosen = same[0];
-    if (session.pwStamp) {
-      chosen = null;
-      for (const d of same) {
-        const st = await lp.pwStamp(id, String(d.data.stored_password || ''));
-        if (!st || st === session.pwStamp) { chosen = d; break; }
-      }
-      if (!chosen) return { status: 'changed' };
-    }
-    if (isDenied(chosen.data.status)) return { status: 'denied' };
-    return { status: 'ok', member: lp.toProfile(chosen.data) };
+      const { auth, authMod } = await lp.getFirebase();
+      await authMod.signOut(auth);
+    } catch (e) { /* SDK না নামলে/অফলাইনে — উপেক্ষা */ }
   };
 
   /* ────────────────────────────────────────────────
-     সেশন — v2 ফরম্যাট: মেয়াদ + নিষ্ক্রিয়তা (idle) + "লগইন থাকুন" (localStorage)
+     প্রোফাইল লোড: member_emails/{নিজের ইমেইল} → members/{member_doc}
      ────────────────────────────────────────────── */
+  lp.loadProfile = async (user) => {
+    const c = cfg();
+    const key = String((user && user.email) || '').trim().toLowerCase();
+    if (!key) return { ok: false, code: 'NO_MEMBER' };
+
+    let fb;
+    try { fb = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout'); } catch (e) { return { ok: false, code: lp.classifyError(e) }; }
+    const { fs, db } = fb;
+
+    /* ইমেইল ভেরিফাইড না হলে rules পড়তে দেয় না → permission-denied = "ভেরিফাই করুন" */
+    const fail = (e) => {
+      const code = lp.classifyError(e);
+      if (code === 'PERMISSION') return { ok: false, code: user.emailVerified ? 'PERMISSION' : 'UNVERIFIED' };
+      return { ok: false, code };
+    };
+
+    let idx;
+    try { idx = await lp.withTimeout(fs.getDoc(fs.doc(db, 'member_emails', key)), c.queryTimeoutMs, 'timeout'); } catch (e) { return fail(e); }
+    if (!idx.exists()) return { ok: false, code: 'NO_MEMBER' };
+    const ref = idx.data() || {};
+    if (!ref.member_doc) return { ok: false, code: 'NO_MEMBER' };
+
+    let snap;
+    try { snap = await lp.withTimeout(fs.getDoc(fs.doc(db, 'members', String(ref.member_doc))), c.queryTimeoutMs, 'timeout'); } catch (e) { return fail(e); }
+    if (!snap.exists()) return { ok: false, code: 'NO_MEMBER' };
+
+    const member = lp.toProfile(snap.data());
+    if (isDenied(member.status) || isDenied(ref.status)) return { ok: false, code: 'DENIED' };
+    return { ok: true, member };
+  };
+
+  /* সাইন-ইনের পরের ধাপ: প্রোফাইল লোড। ভেরিফাই বাকি থাকলে সাইন-ইন রেখে UNVERIFIED, অন্য ব্যর্থতায় সাইন-আউট */
+  async function finishSignIn(user) {
+    const res = await lp.loadProfile(user);
+    if (res.ok) return { ok: true, member: res.member };
+    if (res.code === 'UNVERIFIED') return { ok: false, code: 'UNVERIFIED', email: user.email };
+    await lp.signOutFirebase();
+    return { ok: false, code: res.code };
+  }
+  lp.finishSignIn = finishSignIn;
+
+  /* ────────────────────────────────────────────────
+     লগইন
+     ────────────────────────────────────────────── */
+  lp.authenticate = async (rawEmail, password, remember) => {
+    const c = cfg();
+    const lock = guardCheck();
+    if (lock.locked) return { ok: false, code: 'LOCKED', retryAfter: lock.remaining };
+
+    const parsed = lp.parseEmail(rawEmail);
+    if (parsed.kind !== 'email') return { ok: false, code: 'BAD_IDENTIFIER' };
+
+    let fb;
+    try { fb = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout'); } catch (e) { return { ok: false, code: lp.classifyError(e) }; }
+    const { auth, authMod } = fb;
+
+    try {
+      await authMod.setPersistence(auth, remember ? authMod.browserLocalPersistence : authMod.browserSessionPersistence);
+      await lp.withTimeout(authMod.signInWithEmailAndPassword(auth, parsed.value, password), c.queryTimeoutMs, 'timeout');
+    } catch (e) {
+      const code = lp.classifyError(e);
+      if (code === 'INVALID') {
+        const g = guardFail();
+        return { ok: false, code: 'INVALID', attemptsLeft: g.attemptsLeft, locked: g.locked, retryAfter: g.remaining };
+      }
+      console.error('Sign-in error:', (e && e.code) || e);
+      return { ok: false, code };
+    }
+
+    /* গার্ড শুধু তখনই সাফ করা হয় যখন সদস্য সত্যিই ড্যাশবোর্ডে ঢুকতে পারলেন —
+       নইলে blocked/pending-এর মতো একটি সঠিক পাসওয়ার্ড দিয়েও অন্য অ্যাকাউন্টের ভুল-চেষ্টার হিসাব মুছে যেত */
+    const res = await finishSignIn(auth.currentUser);
+    if (res.ok) lp.guard.clear();
+    return res;
+  };
+
+  /* ────────────────────────────────────────────────
+     ইমেইল ভেরিফিকেশন (ফলব্যাক): পাসওয়ার্ড-রিসেট লিংক সাধারণত ইমেইল ভেরিফাইড করে দেয়;
+     না হলে এখান থেকে আলাদা ভেরিফিকেশন লিংক পাঠানো ও যাচাই করা যায়
+     ────────────────────────────────────────────── */
+  lp.verification = {
+    async send() {
+      const c = cfg();
+      let fb;
+      try { fb = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout'); } catch (e) { return { ok: false, code: lp.classifyError(e) }; }
+      const user = fb.auth.currentUser;
+      if (!user) return { ok: false, code: 'SIGNEDOUT' };
+      try {
+        try { await lp.withTimeout(fb.authMod.sendEmailVerification(user, actionSettings()), c.emailTimeoutMs, 'timeout'); }
+        catch (e) {
+          if (/continue-uri|unauthorized-domain/.test(String(e && e.code))) await lp.withTimeout(fb.authMod.sendEmailVerification(user), c.emailTimeoutMs, 'timeout');
+          else throw e;
+        }
+      } catch (e) {
+        return { ok: false, code: lp.classifyError(e) };
+      }
+      return { ok: true, masked: lp.maskEmail(user.email) };
+    },
+
+    async check() {
+      const c = cfg();
+      let fb;
+      try { fb = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout'); } catch (e) { return { ok: false, code: lp.classifyError(e) }; }
+      const user = fb.auth.currentUser;
+      if (!user) return { ok: false, code: 'SIGNEDOUT' };
+      try {
+        await lp.withTimeout(user.reload(), c.queryTimeoutMs, 'timeout');
+        await lp.withTimeout(user.getIdToken(true), c.queryTimeoutMs, 'timeout'); /* নতুন টোকেনে email_verified: true */
+      } catch (e) {
+        return { ok: false, code: lp.classifyError(e) };
+      }
+      if (!user.emailVerified) return { ok: false, code: 'STILL_UNVERIFIED' };
+      return finishSignIn(user);
+    }
+  };
+
+  /* ব্যাকগ্রাউন্ডে সেশন যাচাই: লগইন এখনো বৈধ? সদস্যপদ নিষ্ক্রিয় হয়নি তো? */
+  lp.revalidate = async () => {
+    let fb;
+    try { fb = await lp.getFirebase(); } catch (e) { return { status: 'offline' }; }
+    const { auth } = fb;
+    try {
+      if (typeof auth.authStateReady === 'function') await lp.withTimeout(auth.authStateReady(), 8000, 'timeout');
+    } catch (e) { return { status: 'offline' }; }
+
+    const user = auth.currentUser;
+    if (!user) return { status: 'signedout' };
+    try {
+      await lp.withTimeout(user.reload(), cfg().queryTimeoutMs, 'timeout');
+    } catch (e) {
+      /* পাসওয়ার্ড বদলানো/অ্যাকাউন্ট নিষ্ক্রিয় হলে রিফ্রেশ টোকেন বাতিল — সাইন-আউট */
+      if (/user-token-expired|user-disabled|user-not-found|invalid-user-token|requires-recent-login/.test(String(e && e.code))) return { status: 'signedout' };
+      return { status: 'offline' };
+    }
+
+    const res = await lp.loadProfile(user);
+    if (res.ok) return { status: 'ok', member: res.member };
+    if (res.code === 'DENIED' || res.code === 'PERMISSION') return { status: 'denied' };
+    if (res.code === 'NO_MEMBER') return { status: 'gone' };
+    if (res.code === 'UNVERIFIED') return { status: 'unverified' };
+    return { status: 'offline' };
+  };
+
+  /* অন্য ট্যাব/ডিভাইসে সাইন-আউট হলে জানানো (Firebase নিজেই ট্যাবগুলো সিঙ্ক রাখে) */
+  lp.watchAuth = async (handler) => {
+    const { auth, authMod } = await lp.getFirebase();
+    return authMod.onAuthStateChanged(auth, handler);
+  };
+
+  /* ────────────────────────────────────────────────
+     সেশন র‍্যাপার (v3) — শুধু UI-র মেয়াদ/নিষ্ক্রিয়তা/"লগইন থাকুন" হিসাব।
+     আসল ক্রেডেনশিয়াল Firebase Auth-এর (persistence: local/session) — তার সাথে মিলিয়ে চলে।
+     ব্যক্তিগত তথ্য (মোবাইল, ইমেইল, ঠিকানা ইত্যাদি) স্টোরেজে রাখা হয় না; শুধু পাবলিক-ভেরিফাইয়ে
+     যা দেখা যায় (নাম, আইডি, ধরন, স্ট্যাটাস, ছবি) — ড্যাশবোর্ড দ্রুত দেখাতে
+     ────────────────────────────────────────────── */
+  const KEEP = ['member_id', 'full_name', 'membership_type', 'status', 'photo_url'];
+  const slim = (m) => { const o = {}; KEEP.forEach((k) => { o[k] = (m && m[k]) || ''; }); return o; };
+
   function sessionRead() {
     const key = cfg().sessionKey;
     const fromLocal = lp.ls.getJSON(key);
@@ -278,19 +333,18 @@
     const target = s.remember ? lp.ls : lp.ss;
     const other = s.remember ? lp.ss : lp.ls;
     other.remove(c.sessionKey);
-    target.setJSON(c.sessionKey, s);
+    target.setJSON(c.sessionKey, Object.assign({}, s, { member: slim(s.member) }));
   }
 
   lp.session = {
     endReason: null,
 
-    save(member, remember, pwStamp) {
+    save(member, remember) {
       const c = cfg();
       const now = Date.now();
       const s = {
-        v: 2,
+        v: 3,
         member,
-        pwStamp: pwStamp || null,
         remember: !!remember,
         issuedAt: now,
         lastActive: now,
@@ -306,7 +360,7 @@
       lp.session.endReason = null;
       const s = sessionRead();
       if (!s) return null;
-      if (s.v !== 2 || !s.member || !s.member.member_id) { lp.session.clear(); return null; }
+      if (s.v !== 3 || !s.member || !s.member.member_id) { lp.session.clear(); return null; }
       if (s.expiresAt && now > s.expiresAt) { lp.session.clear(); lp.session.endReason = 'expired'; return null; }
       if (!s.remember && c.idleMinutes > 0 && now - (s.lastActive || s.issuedAt) > c.idleMinutes * 60000) {
         lp.session.clear();
@@ -343,50 +397,9 @@
   };
 
   /* ────────────────────────────────────────────────
-     EmailJS — সরাসরি REST (SDK ও পোলিং লুপ ছাড়া)
-     ────────────────────────────────────────────── */
-  lp.sendPasswordEmail = async (p) => {
-    const c = cfg();
-    let res;
-    try {
-      res = await lp.withTimeout(
-        fetch(c.emailjsEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            service_id: c.emailjsServiceId,
-            template_id: c.emailjsPasswordTemplateId,
-            user_id: c.emailjsPublicKey,
-            template_params: {
-              to_email: p.email,
-              to_name: p.name,
-              member_id: p.memberId,
-              password: p.password
-            }
-          })
-        }),
-        c.emailTimeoutMs,
-        'timeout'
-      );
-    } catch (e) {
-      const err = new Error((e && e.message) || 'network');
-      err.code = (e && e.code) || 'network';
-      throw err;
-    }
-    if (!res.ok) {
-      let detail = '';
-      try { detail = await res.text(); } catch (e) { /* উপেক্ষা */ }
-      const err = new Error('emailjs ' + res.status + ' ' + detail);
-      err.code = 'email-http-' + res.status;
-      throw err;
-    }
-  };
-
-  /* ────────────────────────────────────────────────
-     পাসওয়ার্ড রিসেট
-     - crypto-নিরাপদ নতুন পাসওয়ার্ড → Firestore → ইমেইল
-     - ইমেইল ব্যর্থ হলে একই পাসওয়ার্ড আবার পাঠানো যায় (মেমোরিতে রাখা, ডায়ালগ বন্ধে মুছে যায়)
-     - ৬০ সেকেন্ড কুলডাউন ও ঘণ্টায় সর্বোচ্চ ৫ বার (এই ডিভাইসে)
+     পাসওয়ার্ড সেট / রিসেট — Firebase নিজেই ইমেইলে লিংক পাঠায়
+     (প্রথমবার পাসওয়ার্ড সেট করাও এটাই: অ্যাডমিন অনুমোদনের সময় অ্যাকাউন্ট বানিয়ে রাখেন)
+     ⚠️ গোপনীয়তা: ইমেইল সিস্টেমে আছে কিনা কখনো বলা হয় না — উত্তর সবসময় একই
      ────────────────────────────────────────────── */
   const RESET_KEY = 'rjf_reset_guard';
 
@@ -413,81 +426,57 @@
     lp.ls.setJSON(RESET_KEY, { times });
   }
 
-  let pending = null;
+  let pendingEmail = null;
 
-  async function deliver() {
-    if (!pending) return { ok: false, code: 'ERROR' };
+  async function sendReset(email) {
+    const c = cfg();
+    let fb;
+    try { fb = await lp.withTimeout(lp.getFirebase(), c.sdkTimeoutMs, 'timeout'); } catch (e) { return { ok: false, code: lp.classifyError(e) }; }
+    const { auth, authMod } = fb;
     try {
-      await lp.sendPasswordEmail(pending);
+      try {
+        await lp.withTimeout(authMod.sendPasswordResetEmail(auth, email, actionSettings()), c.emailTimeoutMs, 'timeout');
+      } catch (e) {
+        /* সাইটের ডোমেইন Firebase "Authorized domains"-এ না থাকলে কন্টিনিউ-URL ছাড়াই পাঠানো */
+        if (/continue-uri|unauthorized-domain/.test(String(e && e.code))) {
+          await lp.withTimeout(authMod.sendPasswordResetEmail(auth, email), c.emailTimeoutMs, 'timeout');
+        } else throw e;
+      }
     } catch (e) {
-      console.error('Password email error:', e);
-      return { ok: false, code: 'EMAIL_FAILED', canResend: true, detail: lp.classifyError(e) };
+      const code = lp.classifyError(e);
+      if (code !== 'INVALID') { console.error('Password reset error:', (e && e.code) || e); return { ok: false, code }; }
+      /* user-not-found: গোপনীয়তার জন্য সফলের মতোই আচরণ */
     }
-    return { ok: true, masked: lp.maskEmail(pending.email), memberId: pending.memberId };
+    return { ok: true };
   }
 
   lp.reset = {
     guard: { check: resetGuardCheck },
 
-    async start(rawId) {
+    async start(rawEmail) {
       const g = resetGuardCheck();
       if (!g.allowed) return { ok: false, code: 'COOLDOWN', wait: g.wait, reason: g.reason };
+      const parsed = lp.parseEmail(rawEmail);
+      if (parsed.kind !== 'email') return { ok: false, code: 'BAD_IDENTIFIER' };
 
-      const parsed = lp.parseIdentifier(rawId);
-      if (parsed.kind === 'empty' || parsed.kind === 'invalid') return { ok: false, code: 'BAD_IDENTIFIER' };
-
-      let docs;
-      try {
-        docs = await lp.findMembers(parsed);
-      } catch (e) {
-        console.error('Reset lookup error:', e);
-        return { ok: false, code: lp.classifyError(e) };
-      }
-      if (!docs.length) return { ok: false, code: 'NOT_FOUND' };
-      if (docs.length > 1) return { ok: false, code: 'AMBIGUOUS', kind: parsed.kind };
-
-      const d = docs[0];
-      if (isDenied(d.data.status)) return { ok: false, code: 'DENIED' };
-
-      const email = String(d.data.email || '').trim();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok: false, code: 'NO_EMAIL' };
-
-      let password;
-      try {
-        password = lp.generatePassword(cfg().passwordLength);
-      } catch (e) {
-        return { ok: false, code: 'NO_CRYPTO' };
-      }
-
-      try {
-        const { fs } = await lp.withTimeout(lp.getFirebase(), cfg().sdkTimeoutMs, 'timeout');
-        await lp.withTimeout(fs.updateDoc(d.ref, { stored_password: password }), cfg().queryTimeoutMs, 'timeout');
-      } catch (e) {
-        console.error('Reset update error:', e);
-        return { ok: false, code: lp.classifyError(e) };
-      }
-
-      pending = {
-        email,
-        name: d.data.full_name || 'সদস্য',
-        memberId: d.data.member_id || parsed.value,
-        password
-      };
+      const res = await sendReset(parsed.value);
+      if (!res.ok) return res;
       resetGuardRecord();
-      const result = await deliver();
-      result.parsedKind = parsed.kind;
-      return result;
+      pendingEmail = parsed.value;
+      return { ok: true, masked: lp.maskEmail(parsed.value), email: parsed.value };
     },
 
     async resend() {
-      if (!pending) return { ok: false, code: 'ERROR' };
+      if (!pendingEmail) return { ok: false, code: 'ERROR' };
       const g = resetGuardCheck();
       if (!g.allowed) return { ok: false, code: 'COOLDOWN', wait: g.wait, reason: g.reason };
+      const res = await sendReset(pendingEmail);
+      if (!res.ok) return res;
       resetGuardRecord();
-      return deliver();
+      return { ok: true, masked: lp.maskEmail(pendingEmail), email: pendingEmail };
     },
 
-    hasPending: () => !!pending,
-    clear() { pending = null; }
+    hasPending: () => !!pendingEmail,
+    clear() { pendingEmail = null; }
   };
 })(window);

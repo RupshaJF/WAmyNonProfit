@@ -1,7 +1,8 @@
 /* ==========================================================================
-   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login (v2)
-   - একটি স্মার্ট ইনপুটে সদস্য আইডি / ইমেইল / মোবাইল — বাংলা অঙ্কও চলে
-   - ভুল-চেষ্টার সীমা, সেশন মেয়াদ, নিষ্ক্রিয়তায় অটো-লগআউট, "লগইন থাকুন"
+   রূপসা জনকল্যাণ ফাউন্ডেশন — Member Login (v3 — Firebase Authentication)
+   - ইমেইল + পাসওয়ার্ড; যাচাই হয় Firebase-এর সার্ভারে (পাসওয়ার্ড আর ডেটাবেসে/ব্রাউজারে নেই)
+   - পাসওয়ার্ড সেট/রিসেট: Firebase ইমেইলে লিংক পাঠায়
+   - সেশন মেয়াদ, নিষ্ক্রিয়তায় অটো-লগআউট, "লগইন থাকুন"
    - ডিজিটাল সদস্য কার্ড + অফলাইন-সক্ষম QR (কোনো লাইব্রেরি ছাড়া)
    - নোটিশ / ইভেন্ট ট্যাব (dashboard-notices.js, dashboard-events.js)
    - পিওর জাভাস্ক্রিপ্ট + পিওর CSS (css/login.css); কোনো গ্লো/লাইটিং ইফেক্ট নেই
@@ -11,7 +12,7 @@
 window.RJF = window.RJF || {};
 
 /* ────────────────────────────────────────────────
-   কনফিগ — Firebase ও EmailJS এর key এখানে
+   কনফিগ — Firebase key এখানে
    ────────────────────────────────────────────── */
 RJF.loginConfig = Object.assign({
   firebaseConfig: {
@@ -24,16 +25,15 @@ RJF.loginConfig = Object.assign({
   },
   firebaseSdkVersion: "12.9.0",
 
-  emailjsPublicKey: "dtl9HyOi2wvJEUiRB",
-  emailjsServiceId: "service_272nuuq",
-  /* EmailJS template variables: {{to_email}}, {{member_id}}, {{password}}, {{to_name}} */
-  emailjsPasswordTemplateId: "template_hlm44yd",
-  emailjsEndpoint: "https://api.emailjs.com/api/v1.0/email/send",
+  /* পাসওয়ার্ড সেট/ভেরিফিকেশন ইমেইলের লিংকে ক্লিকের পর সদস্য কোন পেজে ফিরবেন।
+     ফাঁকা রাখলে সাইটের নিজের "/#/login"। (ডোমেইনটি Firebase Console → Authentication → Settings → Authorized domains-এ থাকতে হবে;
+     না থাকলে ফিরে-আসার লিংক ছাড়াই ইমেইল যায় — তাতেও কাজ চলে) */
+  authContinueUrl: "",
 
   /* সেশন storage key */
   sessionKey: "rjf_member_session",
-  /* "লগইন থাকুন" চাপলে সদস্য আইডি মনে রাখার key */
-  lastIdKey: "rjf_last_member_id",
+  /* "লগইন থাকুন" চাপলে ইমেইল মনে রাখার key */
+  lastIdKey: "rjf_last_email",
 
   /* ডিফল্ট প্রোফাইল ছবি (photo_url না থাকলে) */
   defaultAvatar: "/icons/avatar.webp",
@@ -45,8 +45,6 @@ RJF.loginConfig = Object.assign({
   deniedStatuses: ["blocked", "rejected"],
   /* এই status-এ ড্যাশবোর্ডে "অনুমোদনের অপেক্ষায়" নোটিস দেখাবে */
   pendingStatuses: ["pending"],
-  /* সদস্য আইডির সবচেয়ে পুরনো বছর (শুধু "1234" লিখলে কোন কোন বছর খুঁজবে) */
-  idMinYear: 2025,
 
   /* "লগইন থাকুন" সেশন কতদিন থাকবে */
   rememberDays: 30,
@@ -55,12 +53,11 @@ RJF.loginConfig = Object.assign({
   idleMinutes: 20,
   idleWarnSeconds: 60,
 
-  /* ভুল-চেষ্টার সীমা: এতবার ভুলের পর লক; লকের সময় (সেকেন্ড) ধাপে ধাপে বাড়ে */
+  /* অতিরিক্ত UX-সীমা: এতবার ভুলের পর এই ডিভাইসে লক (আসল রেট-লিমিট Firebase সার্ভারে); লকের সময় (সেকেন্ড) ধাপে ধাপে বাড়ে */
   maxAttempts: 5,
   lockSeconds: [30, 60, 120, 300, 900],
 
-  /* পাসওয়ার্ড রিসেট */
-  passwordLength: 12,
+  /* পাসওয়ার্ড রিসেট ইমেইল (এই ডিভাইসে) */
   resetCooldownSeconds: 60,
   resetMaxPerHour: 5,
 
@@ -102,23 +99,23 @@ RJF.loginConfig = Object.assign({
     <dialog class="lp-dialog" id="lpResetDialog" aria-labelledby="lpResetTitle">
       <div class="lp-dialog__head">
         <span class="lp-dialog__icon">${icon('key')}</span>
-        <h2 class="lp-dialog__title" id="lpResetTitle">নতুন পাসওয়ার্ড নিন</h2>
+        <h2 class="lp-dialog__title" id="lpResetTitle">পাসওয়ার্ড সেট / রিসেট করুন</h2>
         <button type="button" class="lp-iconbtn" data-close aria-label="বন্ধ করুন">${icon('x')}</button>
       </div>
 
       <div id="lpResetForm">
-        <p class="lp-dialog__desc">সদস্য আইডি, ইমেইল বা মোবাইল নম্বর দিন। নিবন্ধিত ইমেইলে একটি নতুন পাসওয়ার্ড যাবে — আগের পাসওয়ার্ড আর কাজ করবে না।</p>
+        <p class="lp-dialog__desc">আপনার নিবন্ধিত ইমেইল দিন — পাসওয়ার্ড সেট করার একটি লিংক সেই ইমেইলে যাবে। প্রথমবার লগইন করতে চাইলেও এখান থেকেই নিজের পাসওয়ার্ড সেট করে নিন।</p>
         <div class="lp-field">
-          <label class="lp-label" for="lpResetId">সদস্য আইডি, ইমেইল বা মোবাইল</label>
+          <label class="lp-label" for="lpResetId">ইমেইল</label>
           <div class="lp-control">
-            <span class="lp-control__icon" id="lpResetIdIcon">${icon('id-card')}</span>
-            <input class="lp-input" id="lpResetId" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="RJF-2026-1234" aria-describedby="lpResetIdErr">
+            <span class="lp-control__icon" id="lpResetIdIcon">${icon('mail')}</span>
+            <input class="lp-input" id="lpResetId" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="example@email.com" aria-describedby="lpResetIdErr">
           </div>
           <p class="lp-error" id="lpResetIdErr" hidden></p>
         </div>
         <div class="lp-alert lp-alert--error" id="lpResetAlert" role="alert" hidden></div>
         <button type="button" class="lp-btn lp-btn--primary lp-btn--block" id="lpResetSend">
-          <span class="lp-btn__label">${icon('mail')}<span>পাসওয়ার্ড পাঠান</span></span>
+          <span class="lp-btn__label">${icon('mail')}<span>লিংক পাঠান</span></span>
           <span class="lp-spin" aria-hidden="true"></span>
         </button>
       </div>
@@ -126,7 +123,7 @@ RJF.loginConfig = Object.assign({
       <div id="lpResetDone" hidden>
         <div class="lp-done">
           <span class="lp-done__icon">${icon('check')}</span>
-          <h3 class="lp-done__title" id="lpResetDoneTitle">পাসওয়ার্ড পাঠানো হয়েছে</h3>
+          <h3 class="lp-done__title" id="lpResetDoneTitle">ইমেইল পাঠানো হয়েছে</h3>
           <p class="lp-done__msg" id="lpResetDoneMsg"></p>
         </div>
         <div class="lp-alert lp-alert--error" id="lpResetDoneAlert" role="alert" hidden></div>
@@ -190,19 +187,26 @@ RJF.loginConfig = Object.assign({
 
       <div class="lp-auth__main">
         <h2 class="lp-auth__title" id="lpAuthTitle">সদস্য লগইন</h2>
-        <p class="lp-auth__lead">সদস্য আইডি, ইমেইল বা মোবাইল নম্বর দিয়ে প্রবেশ করুন।</p>
+        <p class="lp-auth__lead">নিবন্ধিত ইমেইল ও পাসওয়ার্ড দিয়ে প্রবেশ করুন।</p>
 
         <div class="lp-banner lp-banner--warn" id="lpOffline" hidden>${icon('wifi-off')}<span>আপনি অফলাইনে আছেন। ইন্টারনেট ফিরলে আবার চেষ্টা করুন।</span></div>
         <div class="lp-alert" id="lpAlert" role="alert" hidden></div>
 
+        <div class="lp-verify" id="lpVerify" hidden>
+          <div class="lp-alert lp-alert--warn">${icon('alert-triangle')}<div class="lp-alert__body"><p class="lp-alert__title">ইমেইল ভেরিফাই করা হয়নি</p><p class="lp-alert__detail">নিরাপত্তার জন্য ইমেইল ভেরিফাই করতে হয়। পাসওয়ার্ড সেট করার লিংকে ক্লিক করলেই সাধারণত ভেরিফাই হয়ে যায়। না হলে নিচের বাটনে ভেরিফিকেশন লিংক পাঠান, লিংকে ক্লিক করে ফিরে এসে "আমি ভেরিফাই করেছি" চাপুন।</p></div></div>
+          <div class="lp-verify__actions">
+            <button type="button" class="lp-btn lp-btn--ghost lp-btn--sm" id="lpVerifySend">${icon('mail')}<span>ভেরিফিকেশন লিংক পাঠান</span></button>
+            <button type="button" class="lp-btn lp-btn--primary lp-btn--sm" id="lpVerifyCheck">${icon('check')}<span>আমি ভেরিফাই করেছি</span></button>
+          </div>
+        </div>
+
         <form id="lpForm" novalidate>
           <div class="lp-field">
-            <label class="lp-label" for="lpId">সদস্য আইডি, ইমেইল বা মোবাইল</label>
+            <label class="lp-label" for="lpId">ইমেইল</label>
             <div class="lp-control">
-              <span class="lp-control__icon" id="lpIdIcon">${icon('id-card')}</span>
-              <input class="lp-input" id="lpId" name="username" type="text" inputmode="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="RJF-2026-1234" aria-describedby="lpIdHint lpIdErr" required>
+              <span class="lp-control__icon" id="lpIdIcon">${icon('mail')}</span>
+              <input class="lp-input" id="lpId" name="username" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="example@email.com" aria-describedby="lpIdErr" required>
             </div>
-            <p class="lp-hint" id="lpIdHint"></p>
             <p class="lp-error" id="lpIdErr" hidden></p>
           </div>
 
@@ -393,22 +397,6 @@ RJF.loginConfig = Object.assign({
     }
 
     /* ── আইডেন্টিফায়ার টাইপ ডিটেকশন (আইকন + ছোট্ট হিন্ট) ── */
-    function detectInto(input, iconEl, hintEl) {
-      const parsed = lp.parseIdentifier(input.value);
-      const name = parsed.kind === 'email' ? 'mail' : parsed.kind === 'mobile' ? 'phone' : 'id-card';
-      if (iconEl.dataset.icon !== name) { iconEl.innerHTML = icon(name); iconEl.dataset.icon = name; }
-      if (!hintEl) return parsed;
-      let hint = '';
-      if (parsed.kind === 'email') hint = 'ইমেইল দিয়ে লগইন';
-      else if (parsed.kind === 'mobile') hint = 'মোবাইল নম্বর দিয়ে লগইন';
-      else if (parsed.kind === 'id') {
-        if (parsed.partial) hint = 'আইডি খোঁজা হবে: ' + parsed.candidates.join(' বা ');
-        else if (parsed.display !== input.value.trim()) hint = 'আইডি: ' + parsed.display;
-      }
-      hintEl.textContent = hint;
-      return parsed;
-    }
-
     /* ── ভিউ পরিবর্তন ── */
     function showAuth(opts) {
       el.root.dataset.view = 'auth';
@@ -417,6 +405,7 @@ RJF.loginConfig = Object.assign({
       el.dash.hidden = true;
       el.back.hidden = false;
       el.logout.hidden = true;
+      el.verify.hidden = true;
       document.title = 'সদস্য লগইন | ' + orgName();
       if (opts && opts.focus) (el.id.value ? el.pw : el.id).focus();
     }
@@ -434,6 +423,7 @@ RJF.loginConfig = Object.assign({
       if (typeof RJF.initDashboardNotices === 'function') RJF.initDashboardNotices();
       if (typeof RJF.initDashboardEvents === 'function') RJF.initDashboardEvents();
       startIdle();
+      ensureAuthWatch();
     }
 
     /* ── ড্যাশবোর্ড ডেটা ── */
@@ -521,16 +511,18 @@ RJF.loginConfig = Object.assign({
       stopIdle();
       teardownLive();
       lp.session.clear();
+      if (reason !== 'signedout') lp.signOutFirebase(); /* Firebase সেশনও শেষ (ব্যাকগ্রাউন্ডে) */
       session = null;
       [el.qrDlg, el.resetDlg].forEach((d) => lp.closeDialog(d));
       el.pw.value = '';
+      el.verify.hidden = true;
       clearAlert();
       showAuth({ focus: true });
       if (reason === 'idle') showAlert('info', 'নিষ্ক্রিয় থাকায় লগআউট হয়েছে।', 'নিরাপত্তার জন্য আবার লগইন করুন।');
-      else if (reason === 'expired') showAlert('info', 'সেশনের মেয়াদ শেষ হয়েছে।', 'আবার লগইন করুন।');
+      else if (reason === 'expired' || reason === 'signedout') showAlert('info', 'সেশন শেষ হয়ে গেছে।', 'আবার লগইন করুন।');
       else if (reason === 'gone') showAlert('warn', 'আপনার সদস্য তথ্য আর পাওয়া যাচ্ছে না।', 'সমস্যা হলে সংগঠনের সাথে যোগাযোগ করুন।');
       else if (reason === 'denied') showAlert('error', 'আপনার সদস্যপদ বর্তমানে নিষ্ক্রিয়।', 'বিস্তারিত জানতে সংগঠনের সাথে যোগাযোগ করুন।');
-      else if (reason === 'changed') showAlert('info', 'পাসওয়ার্ড বদলানো হয়েছে।', 'নিরাপত্তার জন্য নতুন পাসওয়ার্ড দিয়ে আবার লগইন করুন।');
+      else if (reason === 'unverified') showAlert('warn', 'ইমেইল ভেরিফাই করা নেই।', 'আবার লগইন করে ভেরিফাই করুন।');
       else lp.toast('লগআউট হয়েছে।');
     }
 
@@ -607,18 +599,19 @@ RJF.loginConfig = Object.assign({
       e.preventDefault();
       if (busy || lockTimer) return;
       clearAlert();
+      el.verify.hidden = true;
       clearFieldError(el.id, el.idErr);
       clearFieldError(el.pw, el.pwErr);
 
-      const parsed = lp.parseIdentifier(el.id.value);
-      const password = el.pw.value.trim();
+      const parsed = lp.parseEmail(el.id.value);
+      const password = el.pw.value; /* পাসওয়ার্ড কাটছাঁট করা হয় না — সদস্যের নিজের বেছে নেওয়া পাসওয়ার্ড */
       let firstBad = null;
 
       if (parsed.kind === 'empty') {
-        setFieldError(el.id, el.idErr, 'সদস্য আইডি, ইমেইল বা মোবাইল নম্বর দিন।');
+        setFieldError(el.id, el.idErr, 'ইমেইল ঠিকানা দিন।');
         firstBad = el.id;
       } else if (parsed.kind === 'invalid') {
-        setFieldError(el.id, el.idErr, 'এটি সঠিক আইডি, ইমেইল বা মোবাইল নম্বর মনে হচ্ছে না। যেমন: RJF-2026-1234');
+        setFieldError(el.id, el.idErr, 'এটি সঠিক ইমেইল ঠিকানা মনে হচ্ছে না। যেমন: name@example.com');
         firstBad = el.id;
       }
       if (!password) {
@@ -638,7 +631,7 @@ RJF.loginConfig = Object.assign({
       if (lock.locked) { startLock(lock.remaining); return; }
 
       setBusy(true);
-      const res = await lp.authenticate(el.id.value, password);
+      const res = await lp.authenticate(el.id.value, password, el.remember.checked);
       setBusy(false);
       if (!ctrl || ctrl.api !== api) return; /* অপেক্ষার মধ্যে অন্য পেজে চলে গেলে */
 
@@ -651,34 +644,67 @@ RJF.loginConfig = Object.assign({
           if (res.locked) { startLock(res.retryAfter); return; }
           let detail = 'পাসওয়ার্ড না পেয়ে থাকলে বা ভুলে গেলে “পাসওয়ার্ড পাননি বা ভুলে গেছেন?” চাপুন।';
           if (res.attemptsLeft <= 2) detail = 'আর ' + lp.bn(res.attemptsLeft) + ' বার ভুল হলে কিছুক্ষণের জন্য লগইন বন্ধ হবে। ' + detail;
-          showAlert('error', 'আইডি (বা ইমেইল/মোবাইল) অথবা পাসওয়ার্ড সঠিক নয়।', detail);
+          showAlert('error', 'ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।', detail);
           el.pw.focus();
           break;
         }
         case 'LOCKED': startLock(res.retryAfter); break;
+        case 'UNVERIFIED': el.verify.hidden = false; break;
+        case 'NO_MEMBER': showAlert('error', 'এই ইমেইল কোনো সদস্যের সাথে যুক্ত নয়।', 'নিবন্ধনের সময় দেওয়া ইমেইল ব্যবহার করুন, অথবা সংগঠনের সাথে যোগাযোগ করুন।'); break;
         case 'DENIED': showAlert('error', 'আপনার সদস্যপদ বর্তমানে নিষ্ক্রিয়।', 'বিস্তারিত জানতে সংগঠনের সাথে যোগাযোগ করুন।'); break;
+        case 'RATE': showAlert('error', 'অনেকবার চেষ্টা হয়েছে।', 'নিরাপত্তার জন্য সার্ভার সাময়িকভাবে আটকে দিয়েছে — কিছুক্ষণ পর আবার চেষ্টা করুন, বা পাসওয়ার্ড রিসেট করুন।'); break;
+        case 'CONFIG': showAlert('error', 'লগইন সিস্টেম এখনো সম্পূর্ণ চালু নেই।', 'সংগঠনকে জানান (Firebase Authentication কনফিগারেশন)।'); break;
         case 'TIMEOUT': showAlert('error', 'সার্ভার সাড়া দিচ্ছে না।', 'কিছুক্ষণ পর আবার চেষ্টা করুন।'); break;
         case 'OFFLINE': showAlert('warn', 'আপনি অফলাইনে আছেন।', 'ইন্টারনেট সংযোগ ফিরলে আবার চেষ্টা করুন।'); break;
         case 'NETWORK': showAlert('error', 'সংযোগে সমস্যা হয়েছে।', 'ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।'); break;
-        case 'PERMISSION': showAlert('error', 'সার্ভার এই অনুরোধ গ্রহণ করছে না।', 'সমস্যা থাকলে সংগঠনের সাথে যোগাযোগ করুন।'); break;
+        case 'PERMISSION': showAlert('error', 'সার্ভার এই অ্যাকাউন্টকে অনুমতি দিচ্ছে না।', 'সমস্যা থাকলে সংগঠনের সাথে যোগাযোগ করুন।'); break;
         case 'BUSY': showAlert('error', 'সার্ভার এখন ব্যস্ত আছে।', 'কিছুক্ষণ পর আবার চেষ্টা করুন।'); break;
-        case 'BAD_IDENTIFIER': setFieldError(el.id, el.idErr, 'এটি সঠিক আইডি, ইমেইল বা মোবাইল নম্বর মনে হচ্ছে না।'); el.id.focus(); break;
+        case 'BAD_IDENTIFIER': setFieldError(el.id, el.idErr, 'এটি সঠিক ইমেইল ঠিকানা মনে হচ্ছে না।'); el.id.focus(); break;
         default: showAlert('error', 'কিছু একটা সমস্যা হয়েছে।', 'আবার চেষ্টা করুন।');
       }
     }
 
     function onLoginSuccess(res) {
       const remember = el.remember.checked;
-      session = lp.session.save(res.member, remember, res.stamp);
-      if (remember) lp.ls.set(cfg().lastIdKey, res.member.member_id);
+      session = lp.session.save(res.member, remember);
+      if (remember) lp.ls.set(cfg().lastIdKey, lp.parseEmail(el.id.value).value || res.member.email || '');
       else lp.ls.remove(cfg().lastIdKey);
       el.pw.value = '';
+      el.verify.hidden = true;
       clearAlert();
       lastValidated = Date.now();
       showDash();
       byId('lpName').focus({ preventScroll: true });
       global.scrollTo(0, 0);
       lp.toast('স্বাগতম, ' + res.member.full_name + '!', 'success');
+    }
+
+    /* ── ইমেইল ভেরিফিকেশন (ফলব্যাক) ── */
+    const verifyMsg = (code) => ({
+      OFFLINE: 'আপনি অফলাইনে আছেন।', NETWORK: 'সংযোগে সমস্যা হয়েছে — আবার চেষ্টা করুন।', TIMEOUT: 'সার্ভার সাড়া দিচ্ছে না — আবার চেষ্টা করুন।',
+      RATE: 'অনেকবার চেষ্টা হয়েছে — কিছুক্ষণ পর আবার চেষ্টা করুন।', SIGNEDOUT: 'সেশন শেষ — আবার লগইন করুন।'
+    }[code] || 'কিছু একটা সমস্যা হয়েছে — আবার চেষ্টা করুন।');
+
+    async function onVerifySend() {
+      el.verifySend.disabled = true;
+      const res = await lp.verification.send();
+      if (!ctrl || ctrl.api !== api) return;
+      el.verifySend.disabled = false;
+      if (res.ok) lp.toast('ভেরিফিকেশন লিংক ' + res.masked + ' ঠিকানায় পাঠানো হয়েছে।', 'success');
+      else lp.toast(verifyMsg(res.code), 'error');
+    }
+
+    async function onVerifyCheck() {
+      el.verifyCheck.disabled = true;
+      const res = await lp.verification.check();
+      if (!ctrl || ctrl.api !== api) return;
+      el.verifyCheck.disabled = false;
+      if (res.ok) { onLoginSuccess(res); return; }
+      if (res.code === 'STILL_UNVERIFIED' || res.code === 'UNVERIFIED') { lp.toast('এখনো ভেরিফাই হয়নি — ইমেইলের লিংকে ক্লিক করেছেন তো?', 'error'); return; }
+      el.verify.hidden = true;
+      if (res.code === 'NO_MEMBER') showAlert('error', 'এই ইমেইল কোনো সদস্যের সাথে যুক্ত নয়।', 'সংগঠনের সাথে যোগাযোগ করুন।');
+      else if (res.code === 'DENIED') showAlert('error', 'আপনার সদস্যপদ বর্তমানে নিষ্ক্রিয়।', 'বিস্তারিত জানতে সংগঠনের সাথে যোগাযোগ করুন।');
+      else showAlert('error', verifyMsg(res.code));
     }
 
     /* ── পাসওয়ার্ড রিসেট ডায়ালগ ── */
@@ -691,7 +717,6 @@ RJF.loginConfig = Object.assign({
       clearFieldError(el.resetId, el.resetIdErr);
       const typed = el.id.value.trim();
       if (typed) el.resetId.value = typed;
-      detectInto(el.resetId, byId('lpResetIdIcon'), null);
       const g = lp.reset.guard.check();
       if (!g.allowed) resetAlert('warn', 'কিছুক্ষণ অপেক্ষা করুন।', 'আবার পাঠাতে ' + lp.bn(g.wait) + ' সেকেন্ড বাকি।');
       lp.openDialog(el.resetDlg);
@@ -722,20 +747,12 @@ RJF.loginConfig = Object.assign({
           return res.reason === 'hourly'
             ? ['এই ডিভাইস থেকে অনেকবার অনুরোধ হয়েছে।', 'কিছুক্ষণ পর আবার চেষ্টা করুন।']
             : ['কিছুক্ষণ অপেক্ষা করুন।', 'আবার পাঠাতে ' + lp.bn(res.wait) + ' সেকেন্ড বাকি।'];
-        case 'BAD_IDENTIFIER': return ['এটি সঠিক আইডি, ইমেইল বা মোবাইল নম্বর মনে হচ্ছে না।', 'যেমন: RJF-2026-1234'];
-        case 'NOT_FOUND': return ['এই তথ্যে কোনো সদস্য পাওয়া যায়নি।', 'আইডি, ইমেইল বা মোবাইল নম্বর আবার মিলিয়ে দেখুন।'];
-        case 'AMBIGUOUS':
-          return res.kind === 'id'
-            ? ['এই তথ্যে একাধিক সদস্য পাওয়া গেছে।', 'সংগঠনের সাথে যোগাযোগ করুন।']
-            : ['এই তথ্যে একাধিক সদস্য পাওয়া গেছে।', 'সদস্য আইডি দিয়ে চেষ্টা করুন।'];
-        case 'DENIED': return ['এই সদস্যপদ বর্তমানে নিষ্ক্রিয়।', 'তাই পাসওয়ার্ড পাঠানো যাবে না। সংগঠনের সাথে যোগাযোগ করুন।'];
-        case 'NO_EMAIL': return ['এই সদস্যের নিবন্ধনে বৈধ ইমেইল নেই।', 'সংগঠনের সাথে যোগাযোগ করুন।'];
-        case 'NO_CRYPTO': return ['এই ব্রাউজারে নিরাপদ পাসওয়ার্ড তৈরি করা যাচ্ছে না।', 'আপডেটেড ব্রাউজার ব্যবহার করে চেষ্টা করুন।'];
+        case 'BAD_IDENTIFIER': return ['এটি সঠিক ইমেইল ঠিকানা মনে হচ্ছে না।', 'যেমন: name@example.com'];
+        case 'RATE': return ['অনেকবার অনুরোধ হয়েছে।', 'সার্ভার সাময়িকভাবে আটকে দিয়েছে — কিছুক্ষণ পর আবার চেষ্টা করুন।'];
+        case 'CONFIG': return ['লগইন সিস্টেম এখনো সম্পূর্ণ চালু নেই।', 'সংগঠনকে জানান (Firebase Authentication কনফিগারেশন)।'];
         case 'TIMEOUT': return ['সার্ভার সাড়া দিচ্ছে না।', 'কিছুক্ষণ পর আবার চেষ্টা করুন।'];
         case 'OFFLINE': return ['আপনি অফলাইনে আছেন।', 'ইন্টারনেট সংযোগ ফিরলে আবার চেষ্টা করুন।'];
         case 'NETWORK': return ['সংযোগে সমস্যা হয়েছে।', 'ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।'];
-        case 'PERMISSION': return ['পাসওয়ার্ড আপডেট করা যায়নি।', 'সার্ভার অনুমতি দিচ্ছে না। সংগঠনের সাথে যোগাযোগ করুন।'];
-        case 'EMAIL_FAILED': return ['ইমেইল পাঠানো যায়নি।', 'নতুন পাসওয়ার্ড তৈরি হয়ে গেছে — “আবার পাঠান” চাপুন।'];
         default: return ['কিছু একটা সমস্যা হয়েছে।', 'আবার চেষ্টা করুন।'];
       }
     }
@@ -751,22 +768,22 @@ RJF.loginConfig = Object.assign({
       el.resetDone.hidden = false;
       el.resetDoneAlert.hidden = true;
       setDoneState(true);
-      setText('lpResetDoneTitle', 'পাসওয়ার্ড পাঠানো হয়েছে');
-      setText('lpResetDoneMsg', res.masked + ' ঠিকানায় ইমেইল গেছে। ইনবক্সে না পেলে স্প্যাম ফোল্ডারও দেখুন।');
+      setText('lpResetDoneTitle', 'ইমেইল পাঠানো হয়েছে');
+      /* গোপনীয়তা: ইমেইলটি সিস্টেমে আছে কিনা বলা হয় না — উত্তর সবসময় একই */
+      setText('lpResetDoneMsg', 'যদি ' + res.masked + ' ঠিকানার সাথে সদস্য অ্যাকাউন্ট যুক্ত থাকে, পাসওয়ার্ড সেট করার লিংক সেখানে গেছে। ইনবক্সে না পেলে স্প্যাম ফোল্ডারও দেখুন। লিংক না এলে সংগঠনের সাথে যোগাযোগ করুন।');
       paintResendCountdown();
-      if (res.parsedKind === 'id' && res.memberId) el.id.value = res.memberId;
-      detectInto(el.id, el.idIcon, el.idHint);
+      if (res.email) el.id.value = res.email;
     }
 
     async function onResetSend() {
       if (resetBusy) return;
       el.resetAlert.hidden = true;
       clearFieldError(el.resetId, el.resetIdErr);
-      const parsed = lp.parseIdentifier(el.resetId.value);
+      const parsed = lp.parseEmail(el.resetId.value);
       if (parsed.kind === 'empty' || parsed.kind === 'invalid') {
         setFieldError(el.resetId, el.resetIdErr, parsed.kind === 'empty'
-          ? 'সদস্য আইডি, ইমেইল বা মোবাইল নম্বর দিন।'
-          : 'এটি সঠিক আইডি, ইমেইল বা মোবাইল নম্বর মনে হচ্ছে না।');
+          ? 'ইমেইল ঠিকানা দিন।'
+          : 'এটি সঠিক ইমেইল ঠিকানা মনে হচ্ছে না।');
         el.resetId.focus();
         return;
       }
@@ -784,18 +801,6 @@ RJF.loginConfig = Object.assign({
       el.resetSend.disabled = false;
 
       if (res.ok) { showResetDone(res); return; }
-      if (res.code === 'EMAIL_FAILED') {
-        /* পাসওয়ার্ড তৈরি হয়েছে, ইমেইল যায়নি — "আবার পাঠান" দেখাই */
-        el.resetForm.hidden = true;
-        el.resetDone.hidden = false;
-        setDoneState(false);
-        setText('lpResetDoneTitle', 'ইমেইল যায়নি');
-        setText('lpResetDoneMsg', 'নতুন পাসওয়ার্ড তৈরি হয়েছে, কিন্তু ইমেইল পাঠানো যায়নি।');
-        const m = resetMessage(res);
-        fillAlert(el.resetDoneAlert, 'error', m[0], m[1]);
-        paintResendCountdown();
-        return;
-      }
       const m = resetMessage(res);
       resetAlert(res.code === 'COOLDOWN' || res.code === 'OFFLINE' ? 'warn' : 'error', m[0], m[1]);
     }
@@ -810,8 +815,7 @@ RJF.loginConfig = Object.assign({
       if (res.ok) {
         el.resetDoneAlert.hidden = true;
         setDoneState(true);
-        setText('lpResetDoneTitle', 'পাসওয়ার্ড পাঠানো হয়েছে');
-        setText('lpResetDoneMsg', res.masked + ' ঠিকানায় আবার ইমেইল পাঠানো হয়েছে। স্প্যাম ফোল্ডারও দেখুন।');
+        setText('lpResetDoneTitle', 'ইমেইল আবার পাঠানো হয়েছে');
         lp.toast('ইমেইল আবার পাঠানো হয়েছে।', 'success');
       } else {
         const m = resetMessage(res);
@@ -933,7 +937,7 @@ RJF.loginConfig = Object.assign({
     async function revalidate() {
       if (!session) return;
       const s = session;
-      const res = await lp.revalidate(s);
+      const res = await lp.revalidate();
       if (!session || session !== s) return;
       lastValidated = Date.now();
       if (res.status === 'ok') {
@@ -941,8 +945,20 @@ RJF.loginConfig = Object.assign({
         session.member = res.member;
         fillDashboard(res.member);
       } else if (res.status !== 'offline') {
-        logout(res.status); /* gone | denied | changed */
+        logout(res.status); /* signedout | gone | denied | unverified */
       }
+    }
+
+    /* Firebase-এর লগইন অন্য ট্যাব/ডিভাইসে শেষ হলে এই ট্যাবেও শেষ */
+    let unwatchAuth = null;
+    let watching = false;
+    function ensureAuthWatch() {
+      if (unwatchAuth || watching) return;
+      watching = true;
+      lp.watchAuth((u) => { if (!u && session) logout('signedout'); }).then((fn) => {
+        watching = false;
+        if (ctrl && ctrl.api === api) { unwatchAuth = fn; cleanups.push(fn); } else { fn(); }
+      }).catch(() => { watching = false; });
     }
 
     /* ── ইভেন্ট ওয়্যারিং ── */
@@ -958,10 +974,7 @@ RJF.loginConfig = Object.assign({
       }
 
       /* আইডি ফিল্ড */
-      on(el.id, 'input', () => {
-        clearFieldError(el.id, el.idErr);
-        detectInto(el.id, el.idIcon, el.idHint);
-      });
+      on(el.id, 'input', () => { clearFieldError(el.id, el.idErr); });
       on(el.id, 'focus', () => lp.warmUp());
       on(el.pw, 'input', () => clearFieldError(el.pw, el.pwErr));
 
@@ -985,6 +998,8 @@ RJF.loginConfig = Object.assign({
       on(el.pw, 'blur', () => { el.caps.hidden = true; });
 
       on(el.form, 'submit', onSubmit);
+      on(el.verifySend, 'click', onVerifySend);
+      on(el.verifyCheck, 'click', onVerifyCheck);
       on(el.forgot, 'click', openReset);
 
       /* অফলাইন ব্যানার */
@@ -994,10 +1009,7 @@ RJF.loginConfig = Object.assign({
       net();
 
       /* রিসেট ডায়ালগ */
-      on(el.resetId, 'input', () => {
-        clearFieldError(el.resetId, el.resetIdErr);
-        detectInto(el.resetId, byId('lpResetIdIcon'), null);
-      });
+      on(el.resetId, 'input', () => { clearFieldError(el.resetId, el.resetIdErr); });
       on(el.resetId, 'keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); onResetSend(); } });
       on(el.resetSend, 'click', onResetSend);
       on(el.resetResend, 'click', onResetResend);
@@ -1097,7 +1109,7 @@ RJF.loginConfig = Object.assign({
       const q = byId;
       el = {
         root: q('lpRoot'), hero: q('lpHero'), auth: q('lpAuth'), dash: q('lpDash'), back: q('lpBack'),
-        form: q('lpForm'), id: q('lpId'), idIcon: q('lpIdIcon'), idHint: q('lpIdHint'), idErr: q('lpIdErr'),
+        form: q('lpForm'), id: q('lpId'), idErr: q('lpIdErr'),
         pw: q('lpPw'), pwErr: q('lpPwErr'), pwToggle: q('lpPwToggle'), caps: q('lpCaps'),
         remember: q('lpRemember'), submit: q('lpSubmit'), submitText: q('lpSubmitText'),
         alert: q('lpAlert'), offline: q('lpOffline'), forgot: q('lpForgot'),
@@ -1107,7 +1119,8 @@ RJF.loginConfig = Object.assign({
         resetSend: q('lpResetSend'), resetResend: q('lpResetResend'), resetBack: q('lpResetBack'),
         qrDlg: q('lpQrDialog'), qrOpenBtn: q('lpQrOpenBtn'), qrOpenLink: q('lpQrOpenLink'),
         qrCopy: q('lpQrCopy'), qrShare: q('lpQrShare'), qrSave: q('lpQrSave'),
-        idleDlg: q('lpIdleDialog'), idleStay: q('lpIdleStay'), idleOut: q('lpIdleOut')
+        idleDlg: q('lpIdleDialog'), idleStay: q('lpIdleStay'), idleOut: q('lpIdleOut'),
+        verify: q('lpVerify'), verifySend: q('lpVerifySend'), verifyCheck: q('lpVerifyCheck')
       };
     }
 
@@ -1116,22 +1129,23 @@ RJF.loginConfig = Object.assign({
       collect();
       wire();
 
-      /* সেশন ফিরিয়ে আনা */
       /* Web Share না থাকলে (বেশিরভাগ ডেস্কটপ) বাটনটাই সরিয়ে ফেলা — গ্রিড গোছানো থাকে */
       if (!(global.navigator && navigator.share) && el.qrShare) { el.qrShare.remove(); el.qrShare = null; }
 
+      /* সেশন ফিরিয়ে আনা */
       session = lp.session.load();
       const endReason = lp.session.endReason;
+      if (endReason) lp.signOutFirebase(); /* মেয়াদ/নিষ্ক্রিয়তায় শেষ — Firebase সেশনও শেষ */
 
       if (session) {
-        showDash();
+        showDash();   /* নাম/আইডি/QR সাথে সাথে; ব্যক্তিগত তথ্য নিচের যাচাইয়ের পর আসে */
         revalidate();
       } else {
         showAuth();
         if (endReason === 'idle') showAlert('info', 'নিষ্ক্রিয় থাকায় লগআউট হয়েছে।', 'নিরাপত্তার জন্য আবার লগইন করুন।');
         else if (endReason === 'expired') showAlert('info', 'সেশনের মেয়াদ শেষ হয়েছে।', 'আবার লগইন করুন।');
         const last = lp.ls.get(cfg().lastIdKey);
-        if (last) { el.id.value = last; el.remember.checked = true; detectInto(el.id, el.idIcon, el.idHint); }
+        if (last) { el.id.value = last; el.remember.checked = true; }
         const lock = lp.guard.check();
         if (lock.locked) startLock(lock.remaining);
         lp.warmUp();

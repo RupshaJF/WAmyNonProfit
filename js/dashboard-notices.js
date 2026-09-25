@@ -91,9 +91,15 @@
     };
   }
 
-  function showError() {
+  function showError(err) {
     const wrap = lp.byId('lpNoticeList');
-    if (wrap) wrap.innerHTML = emptyHtml('wifi-off', 'নোটিশ লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন।', true);
+    if (!wrap) return;
+    if (err && err.code === 'permission-denied') {
+      /* firestore.rules: নোটিশ শুধু অনুমোদিত সদস্যদের জন্য */
+      wrap.innerHTML = emptyHtml('lock', 'নোটিশ শুধু অনুমোদিত সদস্যরা দেখতে পারেন। সদস্যপদ অনুমোদিত হলে এখানে দেখতে পাবেন।', false);
+      return;
+    }
+    wrap.innerHTML = emptyHtml('wifi-off', 'নোটিশ লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন।', true);
   }
 
   function stop() {
@@ -133,13 +139,13 @@
         console.error('Notice load error:', err);
         state.unsub = null;
         state.starting = false;
-        showError();
+        showError(err);
       });
     }).catch((err) => {
       if (token !== state.token) return;
       console.error('Notice SDK error:', err);
       state.starting = false;
-      showError();
+      showError(err);
     });
   };
 

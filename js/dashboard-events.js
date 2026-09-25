@@ -153,9 +153,17 @@
     };
   }
 
-  function showError() {
+  function showError(err) {
     const wrap = lp.byId('lpEventList');
-    if (wrap) wrap.innerHTML = emptyHtml('wifi-off', 'ইভেন্ট লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন।', true);
+    const count = lp.byId('lpEventCount');
+    if (count) { count.hidden = true; count.textContent = ''; }
+    if (!wrap) return;
+    if (err && err.code === 'permission-denied') {
+      /* firestore.rules: ইভেন্ট শুধু অনুমোদিত সদস্যদের জন্য */
+      wrap.innerHTML = emptyHtml('lock', 'ইভেন্ট শুধু অনুমোদিত সদস্যরা দেখতে পারেন। সদস্যপদ অনুমোদিত হলে এখানে দেখতে পাবেন।', false);
+      return;
+    }
+    wrap.innerHTML = emptyHtml('wifi-off', 'ইভেন্ট লোড করা যায়নি — ইন্টারনেট সংযোগ পরীক্ষা করুন।', true);
   }
 
   function stop() {
@@ -193,13 +201,13 @@
         console.error('Event load error:', err);
         state.unsub = null;
         state.starting = false;
-        showError();
+        showError(err);
       });
     }).catch((err) => {
       if (token !== state.token) return;
       console.error('Event SDK error:', err);
       state.starting = false;
-      showError();
+      showError(err);
     });
   };
 

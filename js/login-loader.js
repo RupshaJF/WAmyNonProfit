@@ -109,7 +109,7 @@
 
   function isReturningMember() {
     try {
-      return !!(global.localStorage.getItem('rjf_member_session') || global.localStorage.getItem('rjf_last_member_id'));
+      return !!(global.localStorage.getItem('rjf_member_session') || global.localStorage.getItem('rjf_last_email'));
     } catch (e) {
       return false;
     }

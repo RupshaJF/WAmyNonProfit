@@ -160,47 +160,6 @@
   };
 
   /* ────────────────────────────────────────────────
-     নিরাপদ র‍্যান্ডম ও পাসওয়ার্ড জেনারেটর
-     (Math.random নয় — ব্রাউজারের crypto.getRandomValues)
-     ────────────────────────────────────────────── */
-  lp.randomInt = (max) => {
-    const c = global.crypto;
-    if (!c || !c.getRandomValues) throw new Error('secure-random-unavailable');
-    const limit = Math.floor(0x100000000 / max) * max; /* modulo-bias এড়াতে */
-    const buf = new Uint32Array(1);
-    do { c.getRandomValues(buf); } while (buf[0] >= limit);
-    return buf[0] % max;
-  };
-
-  lp.generatePassword = (length) => {
-    /* দেখতে একই রকম অক্ষর (O/0, l/1/I) বাদ — ইমেইল থেকে দেখে টাইপ করা সহজ হয় */
-    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const lower = 'abcdefghijkmnpqrstuvwxyz';
-    const digits = '23456789';
-    const special = '@#$!';
-    const all = upper + lower + digits + special;
-    const pick = (set) => set[lp.randomInt(set.length)];
-    const len = Math.max(10, Math.min(length || 12, 32));
-    const out = [pick(upper), pick(lower), pick(digits), pick(special)];
-    while (out.length < len) out.push(pick(all));
-    for (let i = out.length - 1; i > 0; i--) { /* Fisher–Yates */
-      const j = lp.randomInt(i + 1);
-      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
-    }
-    return out.join('');
-  };
-
-  /* সময়-নিরপেক্ষ স্ট্রিং তুলনা (প্রথম অমিলে থেমে যায় না) */
-  lp.timingSafeEqual = (a, b) => {
-    const x = String(a);
-    const y = String(b);
-    let diff = x.length ^ y.length;
-    const n = Math.max(x.length, y.length);
-    for (let i = 0; i < n; i++) diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
-    return diff === 0;
-  };
-
-  /* ────────────────────────────────────────────────
      তারিখ/সময় — বাংলা ফরম্যাট (ICU-র উপর নির্ভর করে না)
      ────────────────────────────────────────────── */
   lp.MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];

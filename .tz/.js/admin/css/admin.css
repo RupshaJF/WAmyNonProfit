@@ -240,3 +240,15 @@ table.data-table tr.row-clickable:hover{ background:#fbf8f0; }
 .menu-toggle{
   display:none; width:36px; height:36px; border-radius:9px; border:1.5px solid #e2ddce; background:#fff; align-items:center; justify-content:center;
 }
+
+/* ---------- নিরাপত্তা আপগ্রেড পেজ ---------- */
+.sec-panel{ padding:22px; }
+.sec-intro{ background:#fff8e6; border:1px solid #ecd9a3; color:#5c3d00; border-radius:10px; padding:12px 14px; font-size:14px; line-height:1.7; margin-bottom:16px; }
+.sec-step{ display:flex; gap:14px; padding:14px 0; border-top:1px solid rgba(14,59,54,0.10); }
+.sec-step-no{ width:30px; height:30px; flex:none; border-radius:50%; background:var(--river-deep); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+.sec-step-body h3{ font-size:16px; margin-bottom:4px; }
+.sec-step-body p{ margin:0 0 10px; font-size:13.5px; line-height:1.7; color:#3d4b45; }
+.sec-step-body code{ background:var(--rice-2); padding:1px 6px; border-radius:5px; font-size:12.5px; }
+.sec-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.sec-log{ background:#10201d; color:#d7efe9; border-radius:10px; padding:14px 16px; margin:16px 0 0; font-size:12.5px; line-height:1.75; max-height:340px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace, Menlo, Consolas, monospace; }
+

@@ -1,7 +1,9 @@
 import {
-  db, collection, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp
+  db, collection, doc, getDoc, writeBatch, onSnapshot, query, orderBy, serverTimestamp
 } from './firebase.js';
 import { toast, confirmDialog, escapeHtml, fmtDate, downloadCSV, copyText } from './ui.js';
+import { provisionAccount, authErrorMessage, EMAIL_RE } from './provision.js';
+import { lowerEmail, planSync, applyOps, indexOwner, ID_RE } from './sync.js';
 
 var STATE = { all: [], search: '', statusFilter: 'all', typeFilter: 'all', unsub: null };
 
@@ -238,7 +240,16 @@ function handleDelete(id) {
   var m = STATE.all.filter(function (x) { return x._id === id; })[0];
   confirmDialog('আবেদন ডিলিট করবেন?', (m ? m.full_name : 'এই আবেদন') + ' — এই কাজটি ফিরিয়ে নেওয়া যাবে না।').then(function (ok) {
     if (!ok) return;
-    deleteDoc(doc(db, 'members', id)).then(function () {
+    var key = lowerEmail(m && m.email);
+    indexOwner(key).then(function (owner) {
+      var batch = writeBatch(db);
+      batch.delete(doc(db, 'members', id));
+      /* ইমেইল-ইনডেক্স মুছি শুধু যদি সেটা এই সদস্যেরই হয় (ডুপ্লিকেট ইমেইল থাকলে অন্যজনেরটা অক্ষত থাকে) */
+      if (owner === id) batch.delete(doc(db, 'member_emails', key));
+      var pubId = String((m && m.member_id) || '').trim();
+      if (ID_RE.test(pubId) && m && (m.status === 'approved' || m.status === 'blocked')) batch.delete(doc(db, 'public_members', pubId));
+      return batch.commit();
+    }).then(function () {
       toast('ডিলিট করা হয়েছে', 'success');
     }).catch(function (err) {
       console.error(err);
@@ -282,6 +293,12 @@ function openDrawer(id) {
             '<option value="blocked"' + (status === 'blocked' ? ' selected' : '') + '>ব্লকড (verify.html-এ দেখাবে না)</option>' +
           '</select>' +
         '</div>' +
+      '</div>' +
+
+      '<div class="form-section-title">সদস্য লগইন</div>' +
+      '<div class="form-group full" style="margin-bottom:16px;">' +
+        '<p style="font-size:13px;line-height:1.7;margin-bottom:10px;">অনুমোদন করলে ইমেইলে লগইন অ্যাকাউন্ট নিজে থেকেই তৈরি হয় এবং পাসওয়ার্ড সেট করার লিংক চলে যায়। সদস্য লিংক না পেলে এখান থেকে আবার পাঠান।</p>' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="sendAccessBtn"><i class="fa-solid fa-envelope"></i> লগইন অ্যাকাউন্ট তৈরি ও পাসওয়ার্ড সেটআপ লিংক পাঠান</button>' +
       '</div>' +
 
       '<div class="form-section-title">ব্যক্তিগত তথ্য</div>' +
@@ -331,6 +348,22 @@ function openDrawer(id) {
     document.getElementById('photoPreview').src = e.target.value || '/icons/avatar.webp';
   });
   document.getElementById('saveEditBtn').addEventListener('click', function () { saveMember(id); });
+  document.getElementById('sendAccessBtn').addEventListener('click', function () { sendAccess(m); });
+}
+
+/* সংরক্ষিত (সেভ করা) ডেটা অনুযায়ী: অ্যাকাউন্ট তৈরি + পাসওয়ার্ড সেটআপ লিংক */
+function sendAccess(m) {
+  var email = lowerEmail(m.email);
+  if (m.status !== 'approved') { toast('আগে সদস্যকে "অনুমোদিত" করে সংরক্ষণ করুন', 'error'); return; }
+  if (!EMAIL_RE.test(email)) { toast('এই সদস্যের ইমেইল সঠিক নয়', 'error'); return; }
+  var btn = document.getElementById('sendAccessBtn');
+  btn.disabled = true;
+  provisionAccount(email, { sendLink: true }).then(function (r) {
+    toast(r.created ? 'লগইন অ্যাকাউন্ট তৈরি হয়েছে ও লিংক পাঠানো হয়েছে' : 'পাসওয়ার্ড সেটআপ লিংক পাঠানো হয়েছে', 'success');
+  }).catch(function (err) {
+    console.error(err);
+    toast('পাঠানো যায়নি: ' + authErrorMessage(err), 'error');
+  }).finally(function () { btn.disabled = false; });
 }
 
 function field(name, label, value, type) {
@@ -361,6 +394,7 @@ function saveMember(id) {
     var el = document.getElementById('f_' + name);
     if (el) payload[name] = el.value.trim();
   });
+  payload.email = lowerEmail(payload.email); /* ইমেইল সবসময় ছোট হাতের — লগইন ও ইনডেক্সের জন্য */
   payload.updatedAt = serverTimestamp();
 
   var changes = buildChangeSummary(existing, payload);
@@ -369,13 +403,46 @@ function saveMember(id) {
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="fa-solid fa-spinner spin"></i> সংরক্ষণ হচ্ছে...';
 
-  updateDoc(doc(db, 'members', id), payload).then(function () {
+  var newKey = payload.email;
+  var oldKey = lowerEmail(existing.email);
+  var conflictCheck = EMAIL_RE.test(newKey)
+    ? getDoc(doc(db, 'member_emails', newKey)).then(function (s) { return s.exists() ? (s.data().member_doc || null) : null; })
+    : Promise.resolve(null);
+
+  conflictCheck.then(function (holder) {
+    /* এই ইমেইল আরেকজন সদস্যের ইনডেক্সে থাকলে সেভ হবে না (ইমেইল ইউনিক থাকতে হবে) */
+    if (holder && holder !== id) throw Object.assign(new Error('email-conflict'), { code: 'app/email-conflict' });
+    return oldKey && oldKey !== newKey ? indexOwner(oldKey) : null;
+  }).then(function (oldOwner) {
+    var plan = planSync(existing, payload, id, oldOwner);
+    var batch = writeBatch(db);
+    batch.update(doc(db, 'members', id), payload);
+    applyOps(batch, plan.ops);
+    return batch.commit().then(function () { return plan; });
+  }).then(function (plan) {
     toast('সংরক্ষণ করা হয়েছে', 'success');
     closeDrawer();
     sendUpdateEmail(payload, changes);
+    if (plan.issues.length) toast(plan.issues.join(' — '), 'error');
+
+    /* নতুন করে অনুমোদিত হলে (বা অনুমোদিত সদস্যের ইমেইল বদলালে) লগইন অ্যাকাউন্ট + সেটআপ লিংক */
+    var becameApproved = payload.status === 'approved' &&
+      (existing.status !== 'approved' || lowerEmail(existing.email) !== payload.email);
+    if (becameApproved && EMAIL_RE.test(payload.email)) {
+      provisionAccount(payload.email, { sendLink: true }).then(function (r) {
+        toast(r.created ? 'লগইন অ্যাকাউন্ট তৈরি হয়েছে; পাসওয়ার্ড সেট করার লিংক ইমেইলে গেছে' : 'পাসওয়ার্ড সেট করার লিংক ইমেইলে পাঠানো হয়েছে', 'success');
+      }).catch(function (err) {
+        console.error(err);
+        toast('অ্যাকাউন্ট/লিংক পাঠানো যায়নি (' + authErrorMessage(err) + ') — ড্রয়ার থেকে আবার চেষ্টা করুন', 'error');
+      });
+    }
   }).catch(function (err) {
-    console.error(err);
-    toast('সংরক্ষণ করা যায়নি', 'error');
+    if (err && err.code === 'app/email-conflict') {
+      toast('এই ইমেইল আরেকজন সদস্যের সাথে যুক্ত — সংরক্ষণ হয়নি', 'error');
+    } else {
+      console.error(err);
+      toast('সংরক্ষণ করা যায়নি', 'error');
+    }
   }).finally(function () {
     saveBtn.disabled = false;
     saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ করুন';

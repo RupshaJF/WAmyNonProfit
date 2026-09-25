@@ -6,6 +6,7 @@ import { renderTeam } from './team.js';
 import { renderDonors } from './donors.js';
 import { renderNotices } from './notices.js';
 import { renderEvents } from './events.js';
+import { renderSecurity } from './security.js';
 
 var VIEWS = {
   dashboard: { title: 'ড্যাশবোর্ড', sub: 'রূপসা জনকল্যাণ ফাউন্ডেশন — সম্পূর্ণ প্রজেক্ট ব্যবস্থাপনা', render: renderDashboard },
@@ -13,7 +14,8 @@ var VIEWS = {
   team: { title: 'কমিটি সদস্য', sub: '#/member পেজে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderTeam },
   donors: { title: 'দাতাগণ', sub: '#/donors পেজে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderDonors },
   notices: { title: 'নোটিশ / ঘোষণা', sub: 'সদস্য লগইন ড্যাশবোর্ডে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderNotices },
-  events: { title: 'আসন্ন ইভেন্ট', sub: 'সদস্য লগইন ড্যাশবোর্ডে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderEvents }
+  events: { title: 'আসন্ন ইভেন্ট', sub: 'সদস্য লগইন ড্যাশবোর্ডে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderEvents },
+  security: { title: 'নিরাপত্তা আপগ্রেড', sub: 'সদস্য-ডেটা নতুন নিরাপদ ব্যবস্থায় আনার এককালীন টুল', render: renderSecurity }
 };
 
 function setActiveNav(route) {
@@ -49,7 +51,7 @@ document.getElementById('logoutBtn').addEventListener('click', function () {
 });
 
 onAuthStateChanged(auth, function (user) {
-  if (!user || !ADMIN_EMAILS.includes(user.email)) {
+  if (!user || !ADMIN_EMAILS.map(function (e) { return e.toLowerCase(); }).includes(String(user.email || '').toLowerCase())) {
     window.location.href = 'login.html';
     return;
   }

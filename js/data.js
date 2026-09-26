@@ -30,21 +30,21 @@ RJF.data = {
 
     // গ্যালারি স্লাইডার মেনু ফটো সেকশনে
     slides: [
-      { src: "/gallery/win-team.webp", alt: "শিক্ষা কার্যক্রম", icon: "book", label: "শিক্ষা কার্যক্রমের ছবি এখানে যোগ করুন" },
-      { src: "/gallery/IMG_20260320_234348.jpg", alt: "ইফতার মাহফিল", icon: "heart", label: "স্বাস্থ্যসেবা কার্যক্রমের ছবি এখানে যোগ করুন" },
-      { src: "/gallery/lost-team.webp", alt: "খেলাধুলা", icon: "hand", label: "ত্রাণ বিতরণ কার্যক্রমের ছবি এখানে যোগ করুন" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/win-team.webp", alt: "শিক্ষা কার্যক্রম", icon: "book", label: "শিক্ষা কার্যক্রমের ছবি এখানে যোগ করুন" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/IMG_20260320_234348.jpg", alt: "ইফতার মাহফিল", icon: "heart", label: "স্বাস্থ্যসেবা কার্যক্রমের ছবি এখানে যোগ করুন" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/lost-team.webp", alt: "খেলাধুলা", icon: "hand", label: "ত্রাণ বিতরণ কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "/gallery/national-anthem-all-team.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "প্রশিক্ষণ কার্যক্রমের ছবি এখানে যোগ করুন" },
-      { src: "/gallery/team-trophy.webp", alt: "ট্রফি উদযাপন", icon: "leaf", label: "বৃক্ষরোপণ কার্যক্রমের ছবি এখানে যোগ করুন" },
-      { src: "/gallery/member/rafiqul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/harrun.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/humayon1.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/kawsar.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/imran_ahmed.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/naim.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/kamrul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/fahim.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "Our special members" },
-      { src: "/gallery/member/omor.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
-      { src: "/gallery/sumon.webp", alt: "member of foundation", icon: "tool", label: "Our special members" }
+      { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/team-trophy.webp", alt: "ট্রফি উদযাপন", icon: "leaf", label: "বৃক্ষরোপণ কার্যক্রমের ছবি এখানে যোগ করুন" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/rafiqul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/harrun.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/humayon1.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/kawsar.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/imran_ahmed.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/naim.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/kamrul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/fahim.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/member/omor.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/sumon.webp", alt: "member of foundation", icon: "tool", label: "Our special members" }
     ]
   },
 
@@ -101,8 +101,8 @@ RJF.data = {
       { label: "ব্যবহারের শর্তাবলী", href: "#/terms" }
     ],
     social: [
-      { label: "Facebook", href: "Https://www.facebook.com/rupshajonokollanfoundation", icon: "facebook" },
-      { label: "YouTube", href: "Https://www.YouTube.com/rupshajonokollanfoundation", icon: "youtube" },
+      { label: "Facebook", href: "Https://www.facebook.com/rupshajf", icon: "facebook" },
+      { label: "YouTube", href: "Https://www.YouTube.com/@rupshajf", icon: "youtube" },
       { label: "WhatsApp", href: "https://wa.me/8801957329211?text=%E0%A6%86%E0%A6%AE%E0%A6%BF%20%E0%A6%AB%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A7%8D%E0%A6%A1%E0%A7%87%E0%A6%B6%E0%A6%A8%20%E0%A6%B8%E0%A6%AE%E0%A7%8D%E0%A6%AA%E0%A6%B0%E0%A7%8D%E0%A6%95%E0%A7%87%20%E0%A6%9C%E0%A6%BE%E0%A6%A8%E0%A6%A4%E0%A7%87%20%E0%A6%9A%E0%A6%BE%E0%A6%87", icon: "whatsapp" }
     ]
   }

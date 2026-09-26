@@ -76,3 +76,87 @@ RJF.galleryData = {
     { src: "gallery/rifat.webp", category: "sports", year: "2026", title: "খেলাধুলা", caption: "রূপসা এলাকা, 2026" }
   ]
 };
+
+/* ---------- এডমিন প্যানেল থেকে যোগ/এডিট করা ডাটা (Firestore) দিয়ে উপরের স্ট্যাটিক ডাটা ওভাররাইড ----------
+   এডমিন প্যানেলের 'গ্যালারি' সেকশনে ছবি/ভিডিও/সেটিংস যোগ করা থাকলে সেটাই দেখানো হবে।
+   Firestore-এ কিছু না থাকলে (বা ফেচ ব্যর্থ হলে) উপরের ডিফল্ট ডাটাই দেখাবে — তাই এখনই ভাঙার কোনো ঝুঁকি নেই।
+   ঠিক js/donors-data.js ও js/member-data.js এর মতো একই প্যাটার্ন। */
+RJF._galleryFirestorePromise = null;
+RJF.refreshGalleryDataFromFirestore = function () {
+  if (RJF._galleryFirestorePromise) return RJF._galleryFirestorePromise;
+
+  RJF._galleryFirestorePromise = Promise.all([
+    import('https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js')
+  ]).then(function (mods) {
+    var appMod = mods[0];
+    var fsMod = mods[1];
+    var cfg = {
+      apiKey: "AIzaSyBMfeFWtyE-raexNO8DkpyXBQFvE3yNIRU",
+      authDomain: "rupshajf.firebaseapp.com",
+      projectId: "rupshajf",
+      storageBucket: "rupshajf.firebasestorage.app",
+      messagingSenderId: "878760730320",
+      appId: "1:878760730320:web:39ef84c2b447e24df5c8d5",
+      measurementId: "G-BF5ZPK7NZS"
+    };
+    var app = appMod.getApps().length ? appMod.getApp() : appMod.initializeApp(cfg);
+    var db = fsMod.getFirestore(app);
+
+    var photosQ = fsMod.query(fsMod.collection(db, 'gallery_photos'), fsMod.orderBy('id', 'asc'));
+    var videosQ = fsMod.query(fsMod.collection(db, 'gallery_videos'), fsMod.orderBy('id', 'asc'));
+    var settingsRef = fsMod.doc(db, 'gallery_settings', 'main');
+
+    return Promise.all([
+      fsMod.getDocs(photosQ).catch(function () { return null; }),
+      fsMod.getDocs(videosQ).catch(function () { return null; }),
+      fsMod.getDoc(settingsRef).catch(function () { return null; })
+    ]).then(function (results) {
+      var photosSnap = results[0];
+      var videosSnap = results[1];
+      var settingsSnap = results[2];
+      var changed = false;
+
+      if (settingsSnap && settingsSnap.exists()) {
+        var s = settingsSnap.data();
+        if (s.eyebrow) RJF.galleryData.eyebrow = s.eyebrow;
+        if (s.title) RJF.galleryData.title = s.title;
+        if (s.desc) RJF.galleryData.desc = s.desc;
+        if (s.subscribeHref) RJF.galleryData.subscribeHref = s.subscribeHref;
+        if (s.subscribeLabel) RJF.galleryData.subscribeLabel = s.subscribeLabel;
+
+        if (Array.isArray(s.categories) && s.categories.length) {
+          RJF.galleryData.categories = [{ value: "all", label: "সকল কিছু" }].concat(
+            s.categories.map(function (c) { return { value: c.value, label: c.label }; })
+          );
+        }
+        if (Array.isArray(s.years) && s.years.length) {
+          RJF.galleryData.years = [{ value: "all", label: "All years activities" }].concat(
+            s.years.map(function (y) { return { value: y.value, label: y.label }; })
+          );
+          RJF.galleryData.comingSoonYears = s.years
+            .filter(function (y) { return y.comingSoon; })
+            .map(function (y) { return y.value; });
+        }
+        changed = true;
+      }
+
+      if (photosSnap && !photosSnap.empty) {
+        RJF.galleryData.photos = photosSnap.docs.map(function (d) { return d.data(); });
+        changed = true;
+      }
+      if (videosSnap && !videosSnap.empty) {
+        RJF.galleryData.videos = videosSnap.docs.map(function (d) { return d.data(); });
+        changed = true;
+      }
+
+      if (changed && window.location.hash === '#/gallery' && typeof RJF.renderGalleryPage === 'function') {
+        RJF.renderGalleryPage();
+      }
+    });
+  }).catch(function (err) {
+    console.warn('গ্যালারি ডাটা Firestore থেকে আনা যায়নি, ডিফল্ট ডাটা দেখানো হচ্ছে:', err);
+  });
+
+  return RJF._galleryFirestorePromise;
+};

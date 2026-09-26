@@ -53,7 +53,10 @@ RJF.route = function () {
       RJF.renderMemberPage();
       if (typeof RJF.refreshMemberListFromFirestore === 'function') RJF.refreshMemberListFromFirestore();
     }
-    if (isGallery) RJF.renderGalleryPage();
+    if (isGallery) {
+      RJF.renderGalleryPage();
+      if (typeof RJF.refreshGalleryDataFromFirestore === 'function') RJF.refreshGalleryDataFromFirestore();
+    }
     if (isDonors) {
       RJF.renderDonorsPage();
       if (typeof RJF.refreshDonorListFromFirestore === 'function') RJF.refreshDonorListFromFirestore();

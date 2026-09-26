@@ -33,7 +33,7 @@ RJF.data = {
       { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/win-team.webp", alt: "শিক্ষা কার্যক্রম", icon: "book", label: "শিক্ষা কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/IMG_20260320_234348.jpg", alt: "ইফতার মাহফিল", icon: "heart", label: "স্বাস্থ্যসেবা কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/lost-team.webp", alt: "খেলাধুলা", icon: "hand", label: "ত্রাণ বিতরণ কার্যক্রমের ছবি এখানে যোগ করুন" },
-      { src: "/gallery/national-anthem-all-team.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "প্রশিক্ষণ কার্যক্রমের ছবি এখানে যোগ করুন" },
+      { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/national-anthem-all-team.webp", alt: "জাতীয় সংগীত", icon: "tool", label: "প্রশিক্ষণ কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "https://tvgallery.vercel.app/RJFgallery/activities/sports/team-trophy.webp", alt: "ট্রফি উদযাপন", icon: "leaf", label: "বৃক্ষরোপণ কার্যক্রমের ছবি এখানে যোগ করুন" },
       { src: "https://tvgallery.vercel.app/RJFgallery/member/rafiqul.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },
       { src: "https://tvgallery.vercel.app/RJFgallery/member/harrun.webp", alt: "member of foundation", icon: "tool", label: "Our special members" },

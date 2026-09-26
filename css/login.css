@@ -619,6 +619,44 @@
   .lp-hero__logout:hover { background: rgba(255, 255, 255, .12); border-color: #fff; }
 }
 
+/* ══════════ পদবী (ID card + প্রোফাইল ট্যাব) ══════════ */
+.lp-idcard__position { margin-top: 2px; font-size: .86rem; color: rgba(255, 255, 255, .78); }
+
+/* ══════════ চাঁদা/অনুদান — সারাংশ কার্ড ══════════ */
+.lp-donation-summary {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline;
+  padding: 16px; margin-bottom: 14px;
+  background: var(--lp-brand-tint); border: 1px solid #C4DAD4; border-radius: var(--lp-r-md);
+}
+.lp-donation-summary__num { font: 700 1.4rem var(--lp-font-num); color: var(--lp-brand); }
+.lp-donation-summary__label { font-size: .82rem; color: var(--lp-ink-3); }
+
+/* ══════════ চাঁদা/অনুদান — আইটেম ══════════ */
+.lp-donation__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lp-donation__amount { font: 700 1.25rem var(--lp-font-num); color: var(--lp-brand); }
+.lp-donation__purpose { margin-top: 6px; font-weight: 600; overflow-wrap: anywhere; }
+.lp-donation__meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: .88rem; color: var(--lp-ink-3); }
+.lp-donation__meta span { display: inline-flex; align-items: center; gap: 6px; }
+.lp-donation__meta .lp-icon { width: 15px; height: 15px; }
+.lp-donation__note { margin-top: 8px; color: var(--lp-ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+
+/* ══════════ ডকুমেন্ট — আইটেম ══════════ */
+.lp-doc { display: flex; gap: 14px; align-items: flex-start; }
+.lp-doc__icon {
+  flex: none; width: 44px; height: 44px; border-radius: 12px;
+  display: grid; place-items: center; background: var(--lp-brand-tint); color: var(--lp-brand);
+}
+.lp-doc__icon .lp-icon { width: 22px; height: 22px; }
+.lp-doc__body { flex: 1; min-width: 0; }
+.lp-doc__title { font: 600 1.05rem / 1.4 var(--lp-font-head); overflow-wrap: anywhere; }
+.lp-doc__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: .84rem; color: var(--lp-ink-3); }
+.lp-doc__desc { margin-top: 6px; color: var(--lp-ink-2); white-space: pre-line; overflow-wrap: anywhere; }
+.lp-doc__open { margin-top: 10px; }
+
+/* ══════════ প্রোফাইল সারিতে ইনলাইন এডিট বাটন (dashboard-requests.js বসায়) ══════════ */
+.lp-info__row dd .lp-iconbtn { margin-inline-start: auto; }
+.lp-req-hint { margin-top: 6px; }
+
 /* ══════════ অ্যাক্সেসিবিলিটি ══════════ */
 @media (prefers-reduced-motion: reduce) {
   .lp *, .lp *::before, .lp *::after {

@@ -214,6 +214,47 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ───────────────────────────── PROFILE_CHANGE_REQUESTS (মোবাইল/ঠিকানা পরিবর্তনের অনুরোধ) ─────────────────────────────
+    //  - তৈরি: শুধু অনুমোদিত সদস্য, নিজের ইমেইলে, নির্দিষ্ট দুটি ফিল্ডের একটির জন্যই, স্ট্যাটাস সবসময় 'pending' দিয়ে শুরু
+    //  - পড়া: অ্যাডমিন, অথবা যে সদস্যের ইমেইল হুবহু মেলে
+    //  - অনুমোদন/প্রত্যাখ্যান (update) ও ডিলিট: শুধু অ্যাডমিন (অনুমোদনের সময় admin members-এ আসল পরিবর্তন করে)
+    function isValidChangeRequest() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['member_id', 'full_name', 'email', 'field', 'current_value', 'new_value', 'note', 'status', 'created_at'])
+        && d.keys().hasAll(['email', 'field', 'new_value', 'status', 'created_at'])
+        && d.email == myEmail()
+        && d.field in ['mobile_number', 'permanent_address']
+        && text(d.new_value, 1, 300)
+        && text(d.get('current_value', ''), 0, 300)
+        && text(d.get('note', ''), 0, 300)
+        && text(d.get('member_id', ''), 0, 40)
+        && text(d.get('full_name', ''), 0, 100)
+        && d.status == 'pending'
+        && d.created_at == request.time;
+    }
+
+    match /profile_change_requests/{reqId} {
+      allow get, list: if isAdmin()
+        || (isVerifiedUser() && resource.data.email == myEmail());
+      allow create: if isApprovedMember() && isValidChangeRequest();
+      allow update, delete: if isAdmin();
+    }
+
+    // ───────────────────────────── MEMBER_DONATIONS (চাঁদা/অনুদান হিস্ট্রি) ─────────────────────────────
+    //  - সম্পূর্ণ অ্যাডমিন প্যানেল থেকে যোগ/এডিট/ডিলিট হয়; সদস্য শুধু নিজের রেকর্ড পড়তে পারেন
+    match /member_donations/{docId} {
+      allow get, list: if isAdmin()
+        || (isVerifiedUser() && resource.data.email == myEmail());
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ───────────────────────────── MEMBER_DOCUMENTS (সদস্য-বিশেষ ডকুমেন্ট লাইব্রেরি) ─────────────────────────────
+    //  - নিয়মাবলী/বার্ষিক রিপোর্ট/মিটিং মিনিটস ইত্যাদি — শুধু অনুমোদিত সদস্যরা দেখতে পারেন (নোটিশ/ইভেন্টের ধাঁচে)
+    match /member_documents/{docId} {
+      allow read: if isAdmin() || isApprovedMember();
+      allow write: if isAdmin();
+    }
+
     // ───────────────────────────── বাকি সবকিছু বন্ধ ─────────────────────────────
     match /{document=**} {
       allow read, write: if false;

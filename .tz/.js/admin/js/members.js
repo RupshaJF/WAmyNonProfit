@@ -26,7 +26,7 @@ var FIELD_LABELS = {
   email: 'ইমেইল', present_address: 'বর্তমান ঠিকানা', permanent_address: 'স্থায়ী ঠিকানা',
   education: 'শিক্ষাগত যোগ্যতা', occupation: 'পেশা', membership_type: 'সদস্যপদের ধরন',
   reference_name: 'রেফারেন্স', reference_mobile: 'রেফারেন্সের মোবাইল', photo_url: 'প্রোফাইল ছবি',
-  status: 'আবেদনের স্ট্যাটাস'
+  position: 'পদবী / দায়িত্ব', status: 'আবেদনের স্ট্যাটাস'
 };
 
 /* EmailJS SDK লোড হয়নি থাকলে একবারই লোড করে init করা */
@@ -329,6 +329,7 @@ function openDrawer(id) {
         field('education', 'শিক্ষাগত যোগ্যতা', m.education) +
         field('occupation', 'পেশা', m.occupation) +
         selectField('membership_type', 'সদস্যপদের ধরন', m.membership_type, MEMBERSHIP_TYPES) +
+        field('position', 'পদবী / দায়িত্ব (ঐচ্ছিক — যেমন: সভাপতি, সাধারণ সম্পাদক)', m.position) +
         field('reference_name', 'রেফারেন্স', m.reference_name) +
         field('reference_mobile', 'রেফারেন্সের মোবাইল', m.reference_mobile) +
       '</div>' +
@@ -384,7 +385,7 @@ function closeDrawer() {
 var EDITABLE_FIELDS = [
   'member_id', 'full_name', 'father_name', 'mother_name', 'date_of_birth', 'gender', 'blood_group',
   'mobile_number', 'email', 'present_address', 'permanent_address', 'education', 'occupation',
-  'membership_type', 'reference_name', 'reference_mobile', 'photo_url', 'status'
+  'membership_type', 'position', 'reference_name', 'reference_mobile', 'photo_url', 'status'
 ];
 
 function saveMember(id) {

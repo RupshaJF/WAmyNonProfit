@@ -7,6 +7,9 @@ import { renderDonors } from './donors.js';
 import { renderGallery } from './gallery.js';
 import { renderNotices } from './notices.js';
 import { renderEvents } from './events.js';
+import { renderRequests } from './requests.js';
+import { renderMemberDonations } from './member-donations.js';
+import { renderDocuments } from './documents.js';
 import { renderSecurity } from './security.js';
 
 var VIEWS = {
@@ -17,6 +20,9 @@ var VIEWS = {
   gallery: { title: 'গ্যালারি', sub: '#/gallery পেজের ছবি, ভিডিও, ক্যাটাগরি ও লেখা এখান থেকে নিয়ন্ত্রণ করুন', render: renderGallery },
   notices: { title: 'নোটিশ / ঘোষণা', sub: 'সদস্য লগইন ড্যাশবোর্ডে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderNotices },
   events: { title: 'আসন্ন ইভেন্ট', sub: 'সদস্য লগইন ড্যাশবোর্ডে যা দেখানো হয় তা এখান থেকে নিয়ন্ত্রণ করুন', render: renderEvents },
+  requests: { title: 'তথ্য পরিবর্তনের অনুরোধ', sub: 'সদস্যরা মোবাইল/ঠিকানা পরিবর্তনের যে অনুরোধ পাঠান তা এখান থেকে অনুমোদন/প্রত্যাখ্যান করুন', render: renderRequests },
+  donations: { title: 'চাঁদা / অনুদান', sub: 'সদস্য ড্যাশবোর্ডে দেখানো প্রতিটি সদস্যের চাঁদা/অনুদান হিস্ট্রি এখান থেকে নিয়ন্ত্রণ করুন', render: renderMemberDonations },
+  documents: { title: 'সদস্য ডকুমেন্ট', sub: 'নিয়মাবলী, বার্ষিক রিপোর্ট, মিটিং মিনিটস ইত্যাদি — শুধু লগইন করা সদস্যরা দেখতে পাবেন', render: renderDocuments },
   security: { title: 'নিরাপত্তা আপগ্রেড', sub: 'সদস্য-ডেটা নতুন নিরাপদ ব্যবস্থায় আনার এককালীন টুল', render: renderSecurity }
 };
 

@@ -96,7 +96,8 @@
     occupation: data.occupation || '',
     blood_group: data.blood_group || '',
     gender: data.gender || '',
-    permanent_address: data.permanent_address || ''
+    permanent_address: data.permanent_address || '',
+    position: data.position || ''
   });
 
   const isDenied = (status) => (cfg().deniedStatuses || []).indexOf(String(status || '').toLowerCase()) !== -1;

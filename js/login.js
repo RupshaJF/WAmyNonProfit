@@ -259,6 +259,7 @@ RJF.loginConfig = Object.assign({
             <div class="lp-idcard__who">
               <h2 class="lp-idcard__name" id="lpName" tabindex="-1">—</h2>
               <p class="lp-idcard__type" id="lpType">—</p>
+              <p class="lp-idcard__position" id="lpIdPosition" hidden></p>
             </div>
           </div>
           <div class="lp-idcard__id">
@@ -279,16 +280,19 @@ RJF.loginConfig = Object.assign({
           <button type="button" class="lp-tab" role="tab" id="lpTabProfile" aria-controls="lpPanelProfile" aria-selected="true" data-tab="profile">${icon('user')}<span>প্রোফাইল</span></button>
           <button type="button" class="lp-tab" role="tab" id="lpTabNotices" aria-controls="lpPanelNotices" aria-selected="false" tabindex="-1" data-tab="notices">${icon('megaphone')}<span>নোটিশ</span><span class="lp-dot" id="lpNoticeDot" hidden><span class="lp-sr">নতুন নোটিশ আছে</span></span></button>
           <button type="button" class="lp-tab" role="tab" id="lpTabEvents" aria-controls="lpPanelEvents" aria-selected="false" tabindex="-1" data-tab="events">${icon('calendar')}<span>ইভেন্ট</span><span class="lp-count" id="lpEventCount" hidden></span></button>
+          <button type="button" class="lp-tab" role="tab" id="lpTabDonations" aria-controls="lpPanelDonations" aria-selected="false" tabindex="-1" data-tab="donations">${icon('heart')}<span>চাঁদা/অনুদান</span></button>
+          <button type="button" class="lp-tab" role="tab" id="lpTabDocuments" aria-controls="lpPanelDocuments" aria-selected="false" tabindex="-1" data-tab="documents">${icon('file-text')}<span>ডকুমেন্ট</span></button>
         </div>
 
         <div class="lp-panel" role="tabpanel" id="lpPanelProfile" aria-labelledby="lpTabProfile" tabindex="0">
           <dl class="lp-info">
+            <div class="lp-info__row" id="lpPositionRow" hidden><dt>${icon('award')}<span>পদবী / দায়িত্ব</span></dt><dd id="lpPosition">—</dd></div>
             <div class="lp-info__row"><dt>${icon('briefcase')}<span>পেশা</span></dt><dd id="lpOcc">—</dd></div>
             <div class="lp-info__row"><dt>${icon('droplet')}<span>রক্তের গ্রুপ</span></dt><dd id="lpBlood">—</dd></div>
             <div class="lp-info__row"><dt>${icon('user')}<span>লিঙ্গ</span></dt><dd id="lpGender">—</dd></div>
             <div class="lp-info__row"><dt>${icon('phone')}<span>মোবাইল নম্বর</span></dt><dd><span id="lpMobile">—</span><button type="button" class="lp-iconbtn" data-copy="mobile" aria-label="মোবাইল নম্বর কপি করুন">${icon('copy')}</button></dd></div>
             <div class="lp-info__row lp-info__row--wide"><dt>${icon('mail')}<span>ইমেইল</span></dt><dd><span id="lpEmail">—</span><button type="button" class="lp-iconbtn" data-copy="email" aria-label="ইমেইল কপি করুন">${icon('copy')}</button></dd></div>
-            <div class="lp-info__row lp-info__row--wide"><dt>${icon('home')}<span>স্থায়ী ঠিকানা</span></dt><dd id="lpAddress">—</dd></div>
+            <div class="lp-info__row lp-info__row--wide"><dt>${icon('home')}<span>স্থায়ী ঠিকানা</span></dt><dd><span id="lpAddress">—</span></dd></div>
           </dl>
         </div>
 
@@ -298,6 +302,15 @@ RJF.loginConfig = Object.assign({
 
         <div class="lp-panel" role="tabpanel" id="lpPanelEvents" aria-labelledby="lpTabEvents" tabindex="0" hidden>
           <div class="lp-list" id="lpEventList">${skeleton(3)}</div>
+        </div>
+
+        <div class="lp-panel" role="tabpanel" id="lpPanelDonations" aria-labelledby="lpTabDonations" tabindex="0" hidden>
+          <div class="lp-donation-summary" id="lpDonationSummary" hidden></div>
+          <div class="lp-list" id="lpDonationList">${skeleton(3)}</div>
+        </div>
+
+        <div class="lp-panel" role="tabpanel" id="lpPanelDocuments" aria-labelledby="lpTabDocuments" tabindex="0" hidden>
+          <div class="lp-list" id="lpDocumentList">${skeleton(3)}</div>
         </div>
       </div>
     </div>`;
@@ -422,6 +435,9 @@ RJF.loginConfig = Object.assign({
       selectTab('profile');
       if (typeof RJF.initDashboardNotices === 'function') RJF.initDashboardNotices();
       if (typeof RJF.initDashboardEvents === 'function') RJF.initDashboardEvents();
+      if (typeof RJF.initDashboardDonations === 'function') RJF.initDashboardDonations();
+      if (typeof RJF.initDashboardDocuments === 'function') RJF.initDashboardDocuments();
+      if (typeof RJF.initDashboardRequests === 'function') RJF.initDashboardRequests();
       startIdle();
       ensureAuthWatch();
     }
@@ -458,6 +474,14 @@ RJF.loginConfig = Object.assign({
       setText('lpName', m.full_name);
       setText('lpMemberId', m.member_id);
       setText('lpType', m.membership_type || 'সদস্য');
+
+      const posVal = String(m.position || '').trim();
+      const posRow = byId('lpPositionRow');
+      if (posRow) posRow.hidden = !posVal;
+      setText('lpPosition', posVal || '—');
+      const idPos = byId('lpIdPosition');
+      if (idPos) { idPos.hidden = !posVal; idPos.textContent = posVal; }
+
       setText('lpOcc', m.occupation || '—');
       setText('lpBlood', m.blood_group || '—');
       setText('lpGender', m.gender || '—');

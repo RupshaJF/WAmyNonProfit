@@ -18,7 +18,10 @@
     'js/login-qr.js',
     'js/login.js',
     'js/dashboard-notices.js',
-    'js/dashboard-events.js'
+    'js/dashboard-events.js',
+    'js/dashboard-donations.js',
+    'js/dashboard-documents.js',
+    'js/dashboard-requests.js'
   ];
   var STYLE = 'css/login.css';
 

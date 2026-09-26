@@ -252,3 +252,28 @@ table.data-table tr.row-clickable:hover{ background:#fbf8f0; }
 .sec-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .sec-log{ background:#10201d; color:#d7efe9; border-radius:10px; padding:14px 16px; margin:16px 0 0; font-size:12.5px; line-height:1.75; max-height:340px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace, Menlo, Consolas, monospace; }
 
+/* ---------- গ্যালারি পেজ ---------- */
+.gallery-tabs{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.gtab-btn{
+  display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:10px;
+  border:1.5px solid #e2ddce; background:#fff; color:var(--river-deep); font-size:13.5px; font-weight:600;
+  transition:background .12s ease, color .12s ease, border-color .12s ease; cursor:pointer;
+}
+.gtab-btn:hover{ background:var(--rice-2); }
+.gtab-btn.active{ background:var(--river-deep); border-color:var(--river-deep); color:#fff; }
+
+.gal-hint{ font-size:12.5px; color:#8b968f; margin:0 0 14px; line-height:1.6; }
+
+.chip-editor{ display:flex; flex-direction:column; gap:8px; }
+.chip-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--rice-2); border-radius:10px; padding:8px 10px; }
+.chip-row input[type="text"]{ padding:8px 10px; border-radius:8px; border:1.5px solid #e2ddce; font-size:13.5px; background:#fff; }
+.chip-row .cat-value, .chip-row .year-value{ width:130px; }
+.chip-row .cat-label, .chip-row .year-label{ flex:1; min-width:140px; }
+.chip-row-check{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--river-deep); white-space:nowrap; cursor:pointer; }
+.chip-row-check input{ width:auto; cursor:pointer; }
+.chip-row-del{ margin-left:auto; flex-shrink:0; }
+
+@media (max-width: 880px){
+  .chip-row .cat-value, .chip-row .year-value{ width:100px; }
+}
+

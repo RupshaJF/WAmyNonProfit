@@ -40,7 +40,7 @@
    আপনার ব্র্যান্ডিং অনুযায়ী কাস্টমাইজ করতে পারেন।
 4. **অ্যাডমিন ইমেইল তালিকা মিলিয়ে নিন** — `firestore.rules` ও `firestore.rules.final` দুটোতেই
    `adminEmails()` ফাংশনে আছে `imran.info.me@gmail.com`। আপনার আসল অ্যাডমিন ইমেইল(গুলো) এখানে
-   বসান (একাধিক হলে কমা দিয়ে অ্যারেতে)। `.tz/.js/admin/js/admin-config.js`-এর `ADMIN_EMAILS`-এর
+   বসান (একাধিক হলে কমা দিয়ে অ্যারেতে)। `admin/js/admin-config.js`-এর `ADMIN_EMAILS`-এর
    সাথে **হুবহু মিলতে হবে**।
 
 ### ধাপ ১ — ট্রানজিশন rules ও নতুন ফাইল ডিপ্লয় করুন
@@ -101,14 +101,14 @@
 | `js/verify/member-id.js` | আইডি sanitize (শুধু A-Z0-9-, ইনজেকশন ঠেকাতে) |
 | `js/verify/member-lookup.js` | এখন `public_members`-এ ID দিয়ে সরাসরি পড়ে (আগে `members`-এ query করত) |
 | `js/verify/render-member-info.js` | সব মান HTML-escape করে দেখানো হয় |
-| `.tz/.js/admin/js/firebase.js` | নতুন এক্সপোর্ট: `writeBatch`, `getDoc`, `setDoc`, `deleteField`, ও সদস্য-অ্যাকাউন্ট তৈরির জন্য Auth ফাংশন |
-| `.tz/.js/admin/js/provision.js` | **নতুন** — সদস্যের Firebase লগইন অ্যাকাউন্ট তৈরি ও পাসওয়ার্ড-সেটআপ লিংক পাঠানো |
-| `.tz/.js/admin/js/sync.js` | **নতুন** — প্রতিটি সদস্য-পরিবর্তনে `member_emails`/`public_members` সিঙ্কে রাখার লজিক |
-| `.tz/.js/admin/js/security.js` | **নতুন** — "নিরাপত্তা আপগ্রেড" মাইগ্রেশন পেজ (স্ক্যান/সিঙ্ক/অ্যাকাউন্ট/ক্লিন) |
-| `.tz/.js/admin/js/members.js` | সংরক্ষণ/ডিলিট এখন atomic batch; অনুমোদন করলে লগইন অ্যাকাউন্ট তৈরির বাটন |
-| `.tz/.js/admin/js/app.js` | নতুন রুট ("security"), অ্যাডমিন-ইমেইল মিল case-insensitive |
-| `.tz/.js/admin/index.html` | সাইডবারে "নিরাপত্তা আপগ্রেড" লিংক |
-| `.tz/.js/admin/css/admin.css` | নতুন পেজের জন্য স্টাইল যোগ (আগের স্টাইল অক্ষত) |
+| `admin/js/firebase.js` | নতুন এক্সপোর্ট: `writeBatch`, `getDoc`, `setDoc`, `deleteField`, ও সদস্য-অ্যাকাউন্ট তৈরির জন্য Auth ফাংশন |
+| `admin/js/provision.js` | **নতুন** — সদস্যের Firebase লগইন অ্যাকাউন্ট তৈরি ও পাসওয়ার্ড-সেটআপ লিংক পাঠানো |
+| `admin/js/sync.js` | **নতুন** — প্রতিটি সদস্য-পরিবর্তনে `member_emails`/`public_members` সিঙ্কে রাখার লজিক |
+| `admin/js/security.js` | **নতুন** — "নিরাপত্তা আপগ্রেড" মাইগ্রেশন পেজ (স্ক্যান/সিঙ্ক/অ্যাকাউন্ট/ক্লিন) |
+| `admin/js/members.js` | সংরক্ষণ/ডিলিট এখন atomic batch; অনুমোদন করলে লগইন অ্যাকাউন্ট তৈরির বাটন |
+| `admin/js/app.js` | নতুন রুট ("security"), অ্যাডমিন-ইমেইল মিল case-insensitive |
+| `admin/index.html` | সাইডবারে "নিরাপত্তা আপগ্রেড" লিংক |
+| `admin/css/admin.css` | নতুন পেজের জন্য স্টাইল যোগ (আগের স্টাইল অক্ষত) |
 | `sw.js` | `CACHE_VERSION` বাড়ানো — deploy করলে ফিরতি ভিজিটররা নতুন কোড পাবেন |
 
 `index.html`-এ নতুন কোনো পরিবর্তন নেই — আগে যোগ করা লেজি-লোডার কাঠামোই এখনো ব্যবহার হচ্ছে।
@@ -144,7 +144,7 @@
 - ভুল-চেষ্টার রেট-লিমিট এখন Firebase-এর সার্ভারে (আগে শুধু ব্রাউজারে ছিল, এড়ানো সহজ ছিল)
 
 **এখনো যা মাথায় রাখবেন:**
-- **`.tz/.js/admin/js/login.js`** (অ্যাডমিন লগইন) এই কাজে বদলানো হয়নি — এটা আগে থেকেই আলাদা
+- **`admin/js/login.js`** (অ্যাডমিন লগইন) এই কাজে বদলানো হয়নি — এটা আগে থেকেই আলাদা
   Firebase Auth ব্যবহার করত, তাই স্বতন্ত্রভাবে নিরাপদ ছিল। দুই সিস্টেম (সদস্য লগইন, অ্যাডমিন লগইন)
   এখন একই Firebase Authentication প্রজেক্ট শেয়ার করে, কিন্তু rules-এ `isAdmin()` ইমেইল-তালিকা দিয়ে
   আলাদা রাখা আছে।

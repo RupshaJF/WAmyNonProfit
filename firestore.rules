@@ -188,6 +188,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /gallery_photos/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery_videos/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ───────────────────────────── সদস্যদের জন্য (নোটিশ/ইভেন্ট) ─────────────────────────────
     match /notices/{docId} {
       allow read: if isAdmin() || isApprovedMember();

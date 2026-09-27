@@ -232,6 +232,15 @@
 .gallery-page .gallery-item:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(14, 59, 54, 0.14); }
 .gallery-page .gallery-item:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 2px; }
 
+/* স্ক্রল-রিভিল: রিভিল হওয়ার আগে এই ক্লাসটা থাকে, IntersectionObserver (js/gallery-scroll.js)
+   ভিউপোর্টে ঢুকলে ক্লাসটা সরিয়ে দেয় — উপরের transition (transform/opacity) দিয়েই fade-up হয়,
+   তাই .gallery-hide (ফিল্টারের) সিস্টেমের সাথে কোনো সংঘর্ষ হয় না */
+.gallery-page .gallery-item.gallery-reveal-pending,
+.gallery-page .gallery-coming-soon.gallery-reveal-pending {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
 .gallery-page .gallery-item.gallery-hide,
 .gallery-page .gallery-coming-soon.gallery-hide {
   opacity: 0; transform: scale(0.85);

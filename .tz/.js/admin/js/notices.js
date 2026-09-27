@@ -2,6 +2,7 @@ import {
   db, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp
 } from './firebase.js';
 import { toast, confirmDialog, escapeHtml, fmtDate } from './ui.js';
+import { sendPushNotification } from './push-send.js';
 
 var STATE = { all: [], search: '', unsub: null };
 
@@ -134,6 +135,7 @@ function saveNotice(id) {
   saveBtn.innerHTML = '<i class="fa-solid fa-spinner spin"></i> সংরক্ষণ হচ্ছে...';
 
   var payload = { title: title, body: body, pinned: pinned };
+  var isNew = !id;
   var promise;
   if (id) {
     promise = updateDoc(doc(db, 'notices', id), payload);
@@ -145,6 +147,13 @@ function saveNotice(id) {
   promise.then(function () {
     toast('সংরক্ষণ করা হয়েছে', 'success');
     closeDrawer();
+    if (isNew) {
+      sendPushNotification(
+        'নতুন নোটিশ: ' + title,
+        body || 'বিস্তারিত জানতে ওয়েবসাইটে দেখুন।',
+        'https://rupshajonokollanfoundation.vercel.app/index.html#/login'
+      );
+    }
   }).catch(function (err) {
     console.error(err);
     toast('সংরক্ষণ করা যায়নি', 'error');

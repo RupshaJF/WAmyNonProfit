@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
     const body = req.body || {};
     const title = (body.title || '').toString().trim();
     const message = (body.body || '').toString().trim();
-    const url = (body.url || 'https://rupshajonokollanfoundation.vercel.app/').toString();
+    const url = (body.url || 'https://rupshajf.vercel.app/').toString();
 
     if (!title || !message) {
       res.status(400).json({ error: 'title ও body আবশ্যক' });
@@ -90,7 +90,7 @@ module.exports = async function handler(req, res) {
         notification: { title: title, body: message },
         webpush: {
           fcmOptions: { link: url },
-          notification: { icon: 'https://rupshajonokollanfoundation.vercel.app/icons/icon-192.png' }
+          notification: { icon: 'https://rupshajf.vercel.app/icons/icon-192.png' }
         },
         tokens: chunk
       });

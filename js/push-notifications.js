@@ -3,7 +3,7 @@
    (Firebase Console → Project settings → Cloud Messaging → Web Push certificates)। */
 window.RJF = window.RJF || {};
 
-var VAPID_KEY = "YOUR_VAPID_KEY_HERE";
+var VAPID_KEY = "BOArKKWaPKLPOVF089XZF3Q7tW8vRkyj3LUZnXU3RuprkyKza_92a9t9SCAOxb3lo3DAbUi3ApJy0-2fBLGOh-k";
 
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyBMfeFWtyE-raexNO8DkpyXBQFvE3yNIRU",

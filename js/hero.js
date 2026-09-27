@@ -6,8 +6,9 @@ RJF.renderHero = function(){
   if(!root) return;
   var h = RJF.data.hero;
 
-  var slidesHtml = h.slides.map(function(s){
-    return '<div class="slide"><img src="' + s.src + '" alt="' + s.alt + '" data-icon="' + s.icon + '" data-label="' + s.label + '"></div>';
+  var slidesHtml = h.slides.map(function(s, i){
+    var lazyAttr = i === 0 ? '' : ' loading="lazy"';
+    return '<div class="slide"><img src="' + s.src + '" alt="' + s.alt + '" data-icon="' + s.icon + '" data-label="' + s.label + '"' + lazyAttr + '></div>';
   }).join('');
 
   root.innerHTML =

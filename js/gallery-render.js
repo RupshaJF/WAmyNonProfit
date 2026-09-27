@@ -129,4 +129,5 @@ RJF.renderGalleryPage = function () {
   RJF._wireGalleryFilters();
   RJF._wireGalleryLightbox();
   RJF._wireGallerySwitcher();
+  RJF._wireGalleryReveal();
 };

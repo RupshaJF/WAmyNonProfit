@@ -1,0 +1,9 @@
+{
+  "name": "rupsha-janakalyan-foundation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "রূপসা জনকল্যাণ ফাউন্ডেশন — স্ট্যাটিক ওয়েবসাইট + /api/send-notification (Vercel serverless function, পুশ নোটিফিকেশনের জন্য)",
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
